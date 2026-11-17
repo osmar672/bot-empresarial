@@ -3,6 +3,7 @@ import helmet from 'helmet';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 import auth from './routes/auth.routes.js';
+import googleAuth from './routes/google-auth.routes.js';
 import users from './routes/users.routes.js';
 import roles from './routes/roles.routes.js';
 import docs from './routes/documents.routes.js';
@@ -13,7 +14,15 @@ import {errors} from './middlewares/error.js';
 import {HttpError} from './utils/errors.js';
 import {env} from './config/env.js';
 const app=express();app.disable('x-powered-by');
-app.use(helmet({contentSecurityPolicy:env.nodeEnv==='production'?undefined:false}));
+app.use(helmet({
+ crossOriginOpenerPolicy:{policy:'same-origin-allow-popups'},
+ contentSecurityPolicy:env.nodeEnv==='production'?{directives:{
+  'script-src':["'self'",'https://accounts.google.com/gsi/'],
+  'connect-src':["'self'",'https://accounts.google.com/gsi/'],
+  'frame-src':['https://accounts.google.com/gsi/'],
+  'style-src':["'self'","'unsafe-inline'",'https://accounts.google.com/gsi/']
+ }}:false
+}));
 app.use(express.json({limit:'40kb'}));
 // Evita escrituras desde orígenes externos con cookies; Vite usa proxy same-origin.
 app.use('/api',(req,res,next)=>{
@@ -25,7 +34,7 @@ app.use('/api',(req,res,next)=>{
   }next();
 });
 app.get('/api/health',(_req,res)=>res.json({ok:true,app:'PolicyBot',database:'mysql',chat:'groq'}));
-app.use('/api/auth',auth);app.use('/api/users',users);app.use('/api/roles',roles);app.use('/api/documents',docs);app.use('/api/drive',drive);app.use('/api/chat',chat);app.use('/api/usage',usage);
+app.use('/api/auth/google',googleAuth);app.use('/api/auth',auth);app.use('/api/users',users);app.use('/api/roles',roles);app.use('/api/documents',docs);app.use('/api/drive',drive);app.use('/api/chat',chat);app.use('/api/usage',usage);
 app.use('/api',(_req,_res,next)=>next(new HttpError(404,'Ruta no encontrada')));
 const dist=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../frontend/dist');
 app.use(express.static(dist,{maxAge:env.nodeEnv==='production'?'1h':0}));

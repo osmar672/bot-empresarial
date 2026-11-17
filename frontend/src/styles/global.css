@@ -9,3 +9,7 @@
 .role-access-option input { margin-top: 4px; flex: 0 0 auto; }
 .role-access-option small { display: block; color: var(--text-muted, #5d6574); }
 .role-access :focus-visible { outline: 2px solid #26634c; outline-offset: 3px; }
+
+.google-signin { margin: 22px 0; display: grid; gap: 12px; }
+.google-signin > p:first-child { text-align: center; color: #5d6574; }
+.google-signin [inert] { opacity: .6; }
