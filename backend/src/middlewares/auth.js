@@ -10,7 +10,7 @@ export async function authenticate(req,_res,next){try{
   const cookie=getCookie(req);
   if(!cookie)throw new HttpError(401,'Inicia sesión para continuar');
   let decoded;try{decoded=jwt.verify(cookie,env.jwtSecret,{issuer:'policybot'});}catch{throw new HttpError(401,'Sesión expirada o inválida');}
-  const user=await one(`SELECT u.id,u.company_id,u.name,u.email,u.role,c.name AS company_name,c.plan_id FROM pb_users u JOIN pb_companies c ON c.id=u.company_id WHERE u.id=?`,[decoded.sub]);
+  const user=await one(`SELECT u.id,u.company_id,u.name,u.email,u.role,r.label AS role_label,c.name AS company_name,c.plan_id FROM pb_users u JOIN pb_roles r ON r.code=u.role JOIN pb_companies c ON c.id=u.company_id WHERE u.id=?`,[decoded.sub]);
   if(!user)throw new HttpError(401,'Usuario no encontrado');
   req.user=user; req.companyId=user.company_id;next();
 }catch(error){next(error);}}

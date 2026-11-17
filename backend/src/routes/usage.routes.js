@@ -1,8 +1,8 @@
 import {Router} from 'express';
 import {one} from '../db/pool.js';
-import {authenticate} from '../middlewares/auth.js';
+import {authenticate,adminOnly} from '../middlewares/auth.js';
 import {asyncHandler} from '../middlewares/error.js';
-const router=Router();router.use(authenticate);
+const router=Router();router.use(authenticate,adminOnly);
 router.get('/',asyncHandler(async(req,res)=>{
   const r=await one(`SELECT c.plan_id,p.max_documents,p.max_questions_month,
     (SELECT COUNT(*) FROM pb_documents d WHERE d.company_id=c.id) AS documents_used,
