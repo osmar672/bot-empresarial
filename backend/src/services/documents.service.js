@@ -3,20 +3,20 @@ import {one,many,run,transaction} from '../db/pool.js';
 import {splitText} from '../rag/chunk.js';
 import {embed,embeddingModel} from './embedding.service.js';
 import {HttpError} from '../utils/errors.js';
-export async function listDocuments(companyId){return many(`SELECT id,name,source,mime_type,drive_url,state,error_message,chunk_count,indexed_at,created_at FROM pb_documents WHERE company_id=? ORDER BY created_at DESC`,[companyId]);}
+export async function listDocuments(companyId,role='colaborador'){return many(`SELECT id,name,allowed_roles,source,mime_type,drive_url,state,error_message,chunk_count,indexed_at,created_at FROM pb_documents WHERE company_id=? AND (?='admin' OR JSON_CONTAINS(allowed_roles,JSON_QUOTE(?))) ORDER BY created_at DESC`,[companyId,role,role]);}
 export async function enforceDocumentLimit(companyId){
   const quota=await one(`SELECT p.max_documents,COUNT(d.id) AS used FROM pb_companies c JOIN pb_plans p ON c.plan_id=p.id LEFT JOIN pb_documents d ON d.company_id=c.id WHERE c.id=? GROUP BY c.id,p.max_documents`,[companyId]);
   if(!quota)throw new HttpError(404,'Empresa no encontrada');
   if(quota.used>=quota.max_documents)throw new HttpError(429,'Límite de documentos de tu plan alcanzado');
 }
-export async function createDocument({companyId,name,mime,source='upload',driveFileId=null,modified=null,url=null}){
+export async function createDocument({companyId,name,mime,source='upload',driveFileId=null,modified=null,url=null,allowedRoles=['admin']}){
   const id=randomUUID();
   await transaction(async cx=>{
     const [plans]=await cx.execute('SELECT p.max_documents FROM pb_companies c JOIN pb_plans p ON p.id=c.plan_id WHERE c.id=? FOR UPDATE',[companyId]);
     if(!plans.length)throw new HttpError(404,'Empresa no encontrada');
     const [docs]=await cx.execute('SELECT COUNT(*) AS used FROM pb_documents WHERE company_id=?',[companyId]);
     if(docs[0].used>=plans[0].max_documents)throw new HttpError(429,'Límite de documentos de tu plan alcanzado');
-    await cx.execute(`INSERT INTO pb_documents(id,company_id,name,source,mime_type,drive_file_id,drive_modified_at,drive_url,state) VALUES (?,?,?,?,?,?,?,?, 'pendiente')`,[id,companyId,name,source,mime,driveFileId,modified,url]);
+    await cx.execute(`INSERT INTO pb_documents(id,company_id,name,source,mime_type,drive_file_id,drive_modified_at,drive_url,allowed_roles,state) VALUES (?,?,?,?,?,?,?,?,?, 'pendiente')`,[id,companyId,name,source,mime,driveFileId,modified,url,JSON.stringify(allowedRoles)]);
   });
   return id;
 }

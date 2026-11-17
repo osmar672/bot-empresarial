@@ -1,3 +1,7 @@
+## Roles y conversaciones persistentes
+
+Consulta [la guía de permisos y migración](docs/ROLES_Y_CONVERSACIONES.md) para configurar los 100 roles, el acceso a fuentes y las conversaciones privadas. Al migrar, los documentos existentes quedan accesibles solo para administradores hasta revisar sus permisos.
+
 # PolicyBot corregido: MySQL `tablero` + Groq + Drive
 
 **Esta versión está preparada específicamente para la base de datos `tablero`.** No reemplaza ni borra tablas que ya existan: usa el prefijo `pb_` (`pb_users`, `pb_documents`, etc.). Las siete tablas de negocio se crean mediante migraciones idempotentes. Incluye un diagnosticador de conexiones y mensajes de error más concretos.

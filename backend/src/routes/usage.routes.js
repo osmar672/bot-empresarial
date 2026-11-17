@@ -1,14 +1,10 @@
 import {Router} from 'express';
-import {one, many} from '../db/pool.js';
-import {authenticate} from '../middlewares/auth.js';
+import {one} from '../db/pool.js';
+import {authenticate,adminOnly} from '../middlewares/auth.js';
 import {asyncHandler} from '../middlewares/error.js';
-
-const router = Router();
-router.use(authenticate);
-
-router.get('/', asyncHandler(async (req, res) => {
-  // Resumen del mes actual de la empresa
-  const r = await one(`SELECT c.plan_id, p.max_documents, p.max_questions_month,
+const router=Router();router.use(authenticate,adminOnly);
+router.get('/',asyncHandler(async(req,res)=>{
+  const r=await one(`SELECT c.plan_id,p.max_documents,p.max_questions_month,
     (SELECT COUNT(*) FROM pb_documents d WHERE d.company_id=c.id) AS documents_used,
     (SELECT COUNT(*) FROM pb_messages m
      WHERE m.company_id=c.id
