@@ -16,7 +16,8 @@
     "db:dry-run": "npm run migrate -w backend -- --dry-run",
     "db:seed": "npm run seed -w backend",
     "test": "npm run test -w backend",
-    "smoke": "node scripts/smoke-api.mjs"
+    "smoke": "node scripts/smoke-api.mjs",
+    "test:integration": "node --test scripts/access.integration.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
