@@ -1,6 +1,17 @@
-import {useEffect,useRef,useState} from 'react';
-import {ArrowDown,ArrowUpRight,Bot,FileText,MessageSquareText,Send,ShieldCheck,Sparkles} from 'lucide-react';
-import {api,chatStream} from '../services/api.js';
+import {useEffect, useRef, useState} from 'react';
+import {
+  ArrowUpRight,
+  Bot,
+  FileText,
+  MessageSquare,
+  MessageSquareText,
+  Plus,
+  Send,
+  ShieldCheck,
+  Sparkles,
+  Trash2
+} from 'lucide-react';
+import {api, chatStream} from '../services/api.js';
 import {useAuth} from '../context/AuthContext.jsx';
 import {Empty,Notice,Spinner} from '../components/UI.jsx';
 const examples=['¿Cuántos días de vacaciones tenemos?','¿Cómo solicito un reembolso?','¿Cuál es la política de teletrabajo?'];

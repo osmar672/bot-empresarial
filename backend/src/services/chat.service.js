@@ -1,7 +1,7 @@
 import {randomUUID} from 'node:crypto';
-import {one,many,run,transaction} from '../db/pool.js';
+import {one, many, run, transaction} from '../db/pool.js';
 import {rankChunks} from '../rag/retrieval.js';
-import {buildPrompt,streamGroq} from './groq.service.js';
+import {buildPrompt, streamGroq} from './groq.service.js';
 import {env} from '../config/env.js';
 import {HttpError} from '../utils/errors.js';
 import {questionRefusal} from '../utils/access.js';

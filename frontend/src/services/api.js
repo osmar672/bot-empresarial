@@ -1,11 +1,24 @@
-export class ApiError extends Error{constructor(message,status){super(message);this.status=status;}}
-export async function api(path,{method='GET',body,signal}={}){
-  const options={method,credentials:'same-origin',signal,headers:{}};
-  if(body instanceof FormData)options.body=body;
-  else if(body!==undefined){options.headers['Content-Type']='application/json';options.body=JSON.stringify(body);}
-  const res=await fetch('/api'+path,options);
-  let data={};try{data=await res.json();}catch{}
-  if(!res.ok)throw new ApiError(data.error||`Error ${res.status}`,res.status);
+export class ApiError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.status = status;
+  }
+}
+
+export async function api(path, { method = 'GET', body, signal } = {}) {
+  const options = { method, credentials: 'same-origin', signal, headers: {} };
+  if (body instanceof FormData) {
+    options.body = body;
+  } else if (body !== undefined) {
+    options.headers['Content-Type'] = 'application/json';
+    options.body = JSON.stringify(body);
+  }
+  const res = await fetch('/api' + path, options);
+  let data = {};
+  try {
+    data = await res.json();
+  } catch {}
+  if (!res.ok) throw new ApiError(data.error || `Error ${res.status}`, res.status);
   return data;
 }
 export async function chatStream(question,{onEvent,signal,conversationId}={}){
@@ -23,5 +36,7 @@ export async function chatStream(question,{onEvent,signal,conversationId}={}){
         onEvent?.(event);
       }}
     }
-  }finally{reader.releaseLock();}
+  } finally {
+    reader.releaseLock();
+  }
 }

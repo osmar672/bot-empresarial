@@ -21,4 +21,5 @@ router.post('/stream',asyncHandler(async(req,res)=>{
   }catch(e){console.error('Error de chat:',e);if(!controller.signal.aborted)send({type:'error',error:e.status?e.message:'No se pudo generar la respuesta',status:e.status||500});}
   finally{if(!res.destroyed)res.end();}
 }));
+
 export default router;
