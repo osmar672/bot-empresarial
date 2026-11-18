@@ -48,7 +48,7 @@ export async function prepareQuestion({companyId,userId,question,role='colaborad
 }
 export async function processQuestion({companyId,userId,companyName,question,role='colaborador',name='',conversationId=null,onEvent,signal,prepared=null,rank=rankChunks,groq=streamGroq}){
   const {sources,messageId,conversationId:threadId,refusal}=prepared||await prepareQuestion({companyId,userId,question,role,conversationId,rank});
-  const validSources=sources.map(s=>({id:s.ref,documentId:s.document_id,name:s.document_name,url:s.drive_url||null}));
+  const validSources=sources.map(s=>({id:s.ref,documentId:s.document_id,name:s.document_name,url:'/api/documents/'+s.document_id+'/content',drive_url:s.drive_url||null}));
   let answer='',inputTokens=0,outputTokens=0;
   try{
     onEvent({type:'sources',sources:validSources,conversationId:threadId});
@@ -61,7 +61,10 @@ export async function processQuestion({companyId,userId,companyName,question,rol
       }
     }
     if(signal.aborted)throw new Error('Respuesta interrumpida');
-    await run(`UPDATE pb_messages SET answer=?,sources=?,input_tokens=?,output_tokens=?,state='ok',finished_at=NOW(3) WHERE id=? AND company_id=?`,[answer,JSON.stringify(validSources),inputTokens,outputTokens,messageId,companyId]);
+    await run(`UPDATE pb_messages SET answer=?,sources=?,input_tokens=?,output_tokens=?,total_tokens=?,model=?,provider='groq',state='ok',finished_at=NOW(3),duration_ms=TIMESTAMPDIFF(MICROSECOND,created_at,NOW(3))/1000 WHERE id=? AND company_id=?`,[answer,JSON.stringify(validSources),inputTokens,outputTokens,inputTokens+outputTokens,env.groqModel,messageId,companyId]);
     onEvent({type:'done',messageId,conversationId:threadId,inputTokens,outputTokens});
-  }catch(e){await run(`UPDATE pb_messages SET state='error',answer=?,sources=?,input_tokens=?,output_tokens=?,error_message=?,finished_at=NOW(3) WHERE id=? AND company_id=?`,[answer,JSON.stringify(validSources),inputTokens,outputTokens,String(e.message||'Error').slice(0,200),messageId,companyId]).catch(()=>{});throw e;}
+  }catch(e){
+    await run(`UPDATE pb_messages SET state='error',answer=?,sources=?,input_tokens=?,output_tokens=?,total_tokens=?,model=?,provider='groq',error_message=?,finished_at=NOW(3),duration_ms=TIMESTAMPDIFF(MICROSECOND,created_at,NOW(3))/1000 WHERE id=? AND company_id=?`,[answer,JSON.stringify(validSources),inputTokens,outputTokens,inputTokens+outputTokens,env.groqModel,String(e.message||'Error').slice(0,500),messageId,companyId]).catch(()=>{});
+    throw e;
+  }
 }

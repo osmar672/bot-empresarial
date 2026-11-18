@@ -63,3 +63,6 @@ Thumbs.db
 desktop.ini
 .vscode/
 .idea/
+
+# Archivos subidos y almacenamiento local
+backend/uploads/

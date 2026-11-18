@@ -18,7 +18,7 @@ export default function Usage() {
   useEffect(() => {
     api('/usage')
       .then(res => setData(res))
-      .catch(e => setError(e.message));
+      .catch(e => setError(e));
   }, []);
 
   const usage = data?.usage;
@@ -48,7 +48,7 @@ export default function Usage() {
             </div>
             <div>
               <span>PLAN ACTUAL</span>
-              <h2>{usage.plan_id === 'pro' ? 'PolicyBot Pro' : 'PolicyBot Gratis'}</h2>
+              <h2>{usage.plan_id === 'pro' ? 'Luma Pro' : 'Luma Gratis'}</h2>
               <p>
                 Período mensual vigente: <strong>{fmtDate(usage.period?.start)}</strong> al{' '}
                 <strong>{fmtDate(usage.period?.end)}</strong>.
@@ -78,11 +78,11 @@ export default function Usage() {
               </div>
               <div className="usage-name">Documentos guardados</div>
               <div className="usage-total">
-                {usage.documents_used} <span>/ {usage.max_documents}</span>
+                {usage.documents_used} <span>/ {usage.max_documents||'Sin límite'}</span>
               </div>
-              <Progress value={usage.documents_used} max={usage.max_documents} />
+              <Progress value={usage.documents_used} max={usage.max_documents||'Sin límite'} />
               <div className="usage-remaining">
-                {Math.max(0, usage.max_documents - usage.documents_used)} espacios disponibles
+                {usage.max_documents>0?`${Math.max(0,usage.max_documents-usage.documents_used)} espacios disponibles`:'Sin límite de documentos'}
               </div>
             </div>
           </div>

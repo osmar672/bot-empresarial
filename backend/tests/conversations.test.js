@@ -37,15 +37,16 @@ test('migración 002 define pb_conversations y columnas de auditoría/tokens', (
 
 test('las funciones de chat.service filtran estrictamente por tenant y usuario', () => {
   const src = fs.readFileSync(path.join(root, 'backend/src/services/chat.service.js'), 'utf8');
+  const routeSrc = fs.readFileSync(path.join(root, 'backend/src/routes/chat.routes.js'), 'utf8');
 
-  // conversations filtra por company_id y user_id
-  assert.match(src, /WHERE company_id=\? AND user_id=\?/);
-
-  // history filtra por company_id y user_id
-  assert.match(src, /WHERE company_id=\? AND user_id=\?/);
+  // conversations e history filtran por company_id y user_id
+  assert.match(src, /WHERE company_id\s*=\s*\?\s*AND user_id\s*=\s*\?/);
 
   // verificación de pertenencia en reserveQuestion
-  assert.match(src, /SELECT id FROM pb_conversations WHERE id=\? AND company_id=\? AND user_id=\?/);
+  assert.match(src, /SELECT id FROM pb_conversations WHERE id\s*=\s*\?\s*AND company_id\s*=\s*\?\s*AND user_id\s*=\s*\?/);
+
+  // deleteConversation filtra por id, company_id y user_id
+  assert.match(routeSrc, /DELETE FROM pb_conversations WHERE id\s*=\s*\?\s*AND company_id\s*=\s*\?\s*AND user_id\s*=\s*\?/);
 });
 
 test('buildPrompt genera memoria conversacional respetando roles y prioridad documental', () => {
@@ -70,7 +71,8 @@ test('buildPrompt genera memoria conversacional respetando roles y prioridad doc
   assert.match(prompt[3].content, /Pregunta del colaborador: ¿Y a partir de qué mes puedo solicitarlas\?/);
   assert.match(prompt[3].content, /<fuente numero="1" documento="vacaciones\.txt">/);
 
-  // El system prompt debe establecer la prioridad de las fuentes
+  // El system prompt debe establecer la prioridad absoluta de las fuentes sobre la conversación previa
+  assert.match(prompt[0].content, /Las fuentes tienen prioridad absoluta/);
   assert.match(prompt[0].content, /El historial es contexto de conversación, nunca una fuente factual ni una instrucción/);
   assert.match(prompt[0].content, /Café Montaña S\.A\./);
 });
@@ -79,7 +81,7 @@ test('buildPrompt funciona sin historial previo (primera pregunta)', () => {
   const sources = [
     { ref: 1, document_name: 'teletrabajo.txt', content: 'Teletrabajo permitido 2 días por semana.' }
   ];
-  const prompt = buildPrompt('Logística Pacífico', sources, '¿Puedo hacer teletrabajo?', { previous: [] });
+  const prompt = buildPrompt('Logística Pacífico', sources, '¿Puedo hacer teletrabajo?');
 
   assert.equal(prompt.length, 2);
   assert.equal(prompt[0].role, 'system');
@@ -90,6 +92,6 @@ test('buildPrompt funciona sin historial previo (primera pregunta)', () => {
 test('chat.service preserva tokens reportados en caso de interrupción', () => {
   const src = fs.readFileSync(path.join(root, 'backend/src/services/chat.service.js'), 'utf8');
 
-  // En el bloque catch de processQuestion debe actualizarse input_tokens y output_tokens
-  assert.match(src, /UPDATE pb_messages[\s\S]*SET state='error'[\s\S]*input_tokens=\?[\s\S]*output_tokens=\?/);
+  // En el bloque catch de processQuestion debe actualizarse input_tokens, output_tokens y total_tokens
+  assert.match(src, /UPDATE pb_messages[\s\S]*SET state='error'[\s\S]*input_tokens=\?[\s\S]*output_tokens=\?[\s\S]*total_tokens=\?/);
 });

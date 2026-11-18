@@ -1,8 +1,9 @@
 import {useCallback,useEffect,useState} from 'react';
 import {ChevronLeft,ChevronRight,ChevronsLeft,ChevronsRight,Plus,Search,UserPlus,Users as UsersIcon,X} from 'lucide-react';
 import {useAuth} from '../context/AuthContext.jsx';
+import EmployeeEditor from '../components/EmployeeEditor.jsx';
 import RoleOptions from '../components/RoleOptions.jsx';
-import {api} from '../services/api.js';
+import {api,HTTP_STATUS} from '../services/api.js';
 import {Empty,Notice,Spinner} from '../components/UI.jsx';
 
 export default function Users(){
@@ -12,8 +13,9 @@ export default function Users(){
  const [loading,setLoading]=useState(true);
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
- const [success,setSuccess]=useState('');
+ const [success,setSuccess]=useState(null);
  const [show,setShow]=useState(false);
+ const [editing,setEditing]=useState(null);
 
  // Paginación y búsqueda
  const [page,setPage]=useState(1);
@@ -23,7 +25,7 @@ export default function Users(){
  const [searchInput,setSearchInput]=useState('');
  const limit=25;
 
- // Debounce de búsqueda (300 ms)
+ // Debounce de búsqueda en servidor (300 ms)
  useEffect(()=>{
   const timer=setTimeout(()=>{
    setSearch(prev=>{
@@ -57,7 +59,7 @@ export default function Users(){
    setTotalPages(data.totalPages||1);
    if(catalog?.roles)setRoles(catalog.roles);
   }catch(e){
-   setError(e.message);
+   setError(e);
   }finally{
    setLoading(false);
   }
@@ -70,11 +72,11 @@ export default function Users(){
  async function changeRole(id,role){
   setBusy(true);setError('');
   try{
-   await api('/users/'+id+'/role',{method:'PATCH',body:{role}});
+   const result=await api('/users/'+id+'/role',{method:'PATCH',body:{role}});
    await fetchUsers(page,search);
-   setSuccess('Rol actualizado');
+   setSuccess({message:'Rol actualizado',status:result[HTTP_STATUS]});
   }catch(e){
-   setError(e.message);
+   setError(e);
   }finally{
    setBusy(false);
   }
@@ -85,8 +87,8 @@ export default function Users(){
   const form=e.currentTarget;
   setBusy(true);setError('');
   try{
-   await api('/users',{method:'POST',body:Object.fromEntries(new FormData(form).entries())});
-   setSuccess('Usuario creado. Compártele sus credenciales por un canal seguro.');
+   const result=await api('/users',{method:'POST',body:Object.fromEntries(new FormData(form).entries())});
+   setSuccess({message:'Usuario creado. Compártele sus credenciales por un canal seguro.',status:result[HTTP_STATUS]});
    form.reset();
    setShow(false);
    setSearchInput('');
@@ -94,7 +96,7 @@ export default function Users(){
    setPage(1);
    await fetchUsers(1,'');
   }catch(e){
-   setError(e.message);
+   setError(e);
   }finally{
    setBusy(false);
   }
@@ -118,7 +120,7 @@ export default function Users(){
    </button>
   </div>
 
-  <Notice error={error} success={success} onClose={()=>{setError('');setSuccess('');}}/>
+  <Notice error={error} success={success} onClose={()=>{setError('');setSuccess(null);}}/>
 
   {show&&!loading&&<form className="card create-user" onSubmit={submit}>
    <div className="section-heading">
@@ -176,6 +178,8 @@ export default function Users(){
    </div>
   </div>
 
+  {editing&&<EmployeeEditor user={editing} onClose={()=>setEditing(null)}/>}
+
   {loading?<Spinner/>:<div className="list-card">
    {users.length===0?(
     search?(
@@ -197,6 +201,7 @@ export default function Users(){
          <RoleOptions roles={roles}/>
         </select>
        </label>
+       <button type="button" className="btn btn-secondary btn-sm" onClick={()=>setEditing(u)}>Perfil laboral</button>
       </div>)}
      </div>
 

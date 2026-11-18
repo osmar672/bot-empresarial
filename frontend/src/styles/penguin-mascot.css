@@ -1,0 +1,45 @@
+.penguin-companion{--penguin-size:56px;position:relative;display:flex;align-items:center;gap:10px;color:#826b94;min-width:0}
+.penguin-stage{position:relative;width:var(--penguin-size);height:var(--penguin-size);padding:0;border:0;background:transparent;flex-shrink:0;cursor:pointer;border-radius:50%;isolation:isolate}
+.penguin-character{position:relative;z-index:2;display:block;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;transform-origin:50% 88%;animation:penguin-breathe 4s ease-in-out infinite;user-select:none}
+.penguin-halo{position:absolute;inset:16% 12% 5%;border-radius:50%;background:#eee6f6;z-index:0;opacity:.65}
+.penguin-shadow{position:absolute;width:48%;height:6%;left:26%;bottom:4%;border-radius:50%;background:#61447e20;animation:penguin-shadow 4s ease-in-out infinite}
+.penguin-caption{min-width:0;display:flex;flex-direction:column;gap:3px}
+.penguin-caption strong{font-size:11px;line-height:1.5;font-weight:600;color:#80648f}
+.penguin-caption>span{font-size:10px;line-height:1.5;color:#a08bac}
+.penguin-motion-toggle{display:grid;place-items:center;border:1px solid transparent;background:transparent;color:#ac97b9;width:27px;height:27px;border-radius:8px;flex-shrink:0;margin-left:auto}
+.penguin-motion-toggle:hover{background:#eee5f7;border-color:#e0d3eb;color:#76568e}
+.penguin-dock{padding:0 2px 7px;min-height:58px}
+.penguin-hero{--penguin-size:132px;display:inline-flex;flex-direction:column;gap:5px;margin:0 0 25px}
+.penguin-hero .penguin-caption strong{font-size:10px;font-weight:500;color:#ab96ba}
+.penguin-hero .penguin-motion-toggle{position:absolute;right:-26px;bottom:0;margin:0}
+.penguin-spark{position:absolute;z-index:3;opacity:0;color:#b496d0;font-size:15px;pointer-events:none}
+.penguin-spark-one{top:7%;right:3%}.penguin-spark-two{top:32%;left:2%;font-size:10px}
+.penguin-thoughts{position:absolute;right:-4%;top:7%;display:flex;gap:3px;z-index:3;padding:5px;background:#fffcf8;border:1px solid #e6daee;border-radius:10px}
+.penguin-thoughts i,.penguin-speech i{width:3px;height:3px;background:#a58bb7;border-radius:50%;animation:penguin-dot 1.1s ease-in-out infinite}
+.penguin-thoughts i:nth-child(2),.penguin-speech i:nth-child(2){animation-delay:.18s}.penguin-thoughts i:nth-child(3),.penguin-speech i:nth-child(3){animation-delay:.36s}
+.penguin-speech{position:absolute;right:-5%;top:18%;display:flex;align-items:center;gap:3px;z-index:3;padding:7px;background:#fffcf8;border:1px solid #e6daee;border-radius:9px 9px 9px 2px}
+.penguin-companion[data-state=listening] .penguin-character{animation:penguin-listen 2.4s ease-in-out infinite}
+.penguin-companion[data-state=thinking] .penguin-character,.penguin-companion[data-state=loading] .penguin-character{animation:penguin-think 2s ease-in-out infinite}
+.penguin-companion[data-state=responding] .penguin-character{animation:penguin-talk .7s ease-in-out infinite}
+.penguin-companion[data-state=done] .penguin-character{animation:penguin-hop .75s ease-in-out 2,penguin-breathe 4s 1.5s ease-in-out infinite}
+.penguin-companion[data-state=done] .penguin-spark{animation:penguin-sparkle 1.3s ease-out 2}
+.penguin-companion[data-state=error] .penguin-character{animation:penguin-shake .6s ease-in-out 1,penguin-breathe 4s .6s ease-in-out infinite}
+.penguin-companion[data-state=error] .penguin-halo{background:#f8e4e5}
+.penguin-companion[data-state=stopped] .penguin-character{animation:none;transform:rotate(-5deg) translateY(2px)}
+.penguin-wave .penguin-character{animation:penguin-greet .35s ease-in-out 3!important}
+.penguin-stage:hover .penguin-halo{opacity:1}
+@keyframes penguin-breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-3px) scale(1.025)}}
+@keyframes penguin-shadow{0%,100%{transform:scaleX(1);opacity:.8}50%{transform:scaleX(.85);opacity:.5}}
+@keyframes penguin-listen{0%,100%{transform:rotate(0)}35%,65%{transform:rotate(-7deg) translateY(-2px)}}
+@keyframes penguin-think{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(4deg) translateY(-2px)}}
+@keyframes penguin-talk{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-3px) rotate(2deg)}}
+@keyframes penguin-hop{0%,100%{transform:translateY(0)}45%{transform:translateY(-12px) rotate(5deg)}75%{transform:translateY(1px) scaleY(.95)}}
+@keyframes penguin-shake{0%,100%{transform:translateX(0)}25%,75%{transform:translateX(-3px) rotate(-3deg)}50%{transform:translateX(3px) rotate(3deg)}}
+@keyframes penguin-greet{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg) translateY(-4px)}}
+@keyframes penguin-sparkle{0%,100%{opacity:0;transform:scale(.5)}50%{opacity:1;transform:scale(1.2) translateY(-4px)}}
+@keyframes penguin-dot{0%,70%,100%{opacity:.35;transform:translateY(0)}35%{opacity:1;transform:translateY(-2px)}}
+.penguin-paused *{animation:none!important}
+@media(prefers-reduced-motion:reduce){.penguin-companion *{animation:none!important;transition:none!important}}
+@media(max-width:650px){.penguin-hero{--penguin-size:96px;margin-bottom:18px}.penguin-dock{--penguin-size:48px;min-height:50px;gap:8px}.penguin-caption>span{font-size:9px}.penguin-caption strong{font-size:10px}}
+.penguin-paused .penguin-stage .penguin-character{animation:none!important}
+@media(prefers-reduced-motion:reduce){.penguin-companion .penguin-stage .penguin-character{animation:none!important}}
