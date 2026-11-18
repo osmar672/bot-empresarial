@@ -1,5 +1,6 @@
 /** Migraciones seguras y repetibles; no modifica tablas ajenas al prefijo pb_. */
 import mysql from 'mysql2/promise';
+import {isPublishedUpgrade} from './publishedMigrations.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
@@ -112,8 +113,8 @@ async function main(){
       const sql=await fs.readFile(path.join(migrationDir,filename),'utf8');
       const checksum=digest(sql);
       if(done.has(filename)){
-        if(done.get(filename)!==checksum)throw new Error(`La migración aplicada ${filename} fue modificada. No se reescribe la historia; revisa el archivo.`);
-        console.log(`OK    ${filename} (ya aplicada)`);continue;
+        if(done.get(filename)!==checksum&&!isPublishedUpgrade(filename,done.get(filename),checksum))throw new Error(`La migración aplicada ${filename} fue modificada. No se reescribe la historia; revisa el archivo.`);
+        console.log(`OK    ${filename} (${done.get(filename)===checksum?'ya aplicada':'revisión publicada anterior; se conserva su checksum'})`);continue;
       }
       if(statusOnly||dryRun){console.log(`FALTA ${filename}${dryRun?' (simulación, sin ejecutar)':''}`);continue;}
       // MySQL no soporta rollback integral de DDL. Cada CREATE usa IF NOT EXISTS para permitir un reintento.

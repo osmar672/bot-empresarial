@@ -11,10 +11,10 @@
     "build": "npm run build -w frontend",
     "start": "npm run start -w backend",
     "db:photos": "node backend/src/db/setupProfilePhotos.js",
-    "db:migrate": "npm run migrate -w backend",
+    "db:migrate": "node backend/src/db/migrate.js",
     "db:doctor": "npm run doctor -w backend",
-    "db:status": "npm run migrate -w backend -- --status",
-    "db:dry-run": "npm run migrate -w backend -- --dry-run",
+    "db:status": "node backend/src/db/migrate.js --status",
+    "db:dry-run": "node backend/src/db/migrate.js --dry-run",
     "db:seed": "npm run seed -w backend",
     "db:seed:collaborators": "node backend/src/db/seedCollaborators.js",
     "test": "npm run test -w backend",
@@ -24,7 +24,16 @@
     "test:attendance": "node scripts/attendance.integration.mjs",
     "test:profile-photo": "node scripts/profile-photo.integration.mjs",
     "test:workforce": "node scripts/workforce.integration.mjs",
-    "db:seed:team": "node backend/src/db/seedTeam.js"
+    "db:seed:team": "node backend/src/db/seedTeam.js",
+    "setup": "npm ci --include=dev --bin-links=true --workspaces --include-workspace-root && node scripts/ensure-dependencies.mjs --check",
+    "check:install": "node scripts/ensure-dependencies.mjs --check",
+    "predev": "node scripts/ensure-dependencies.mjs",
+    "prestart": "node scripts/ensure-dependencies.mjs --backend",
+    "prebuild": "node scripts/ensure-dependencies.mjs --frontend",
+    "predb:photos": "node scripts/ensure-dependencies.mjs --backend",
+    "predb:migrate": "node scripts/ensure-dependencies.mjs --backend",
+    "predb:status": "node scripts/ensure-dependencies.mjs --backend",
+    "predb:dry-run": "node scripts/ensure-dependencies.mjs --backend"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
