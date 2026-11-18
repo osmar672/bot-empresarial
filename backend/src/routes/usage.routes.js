@@ -1,5 +1,5 @@
 import {Router} from 'express';
-import {one} from '../db/pool.js';
+import {one,many} from '../db/pool.js';
 import {authenticate,adminOnly} from '../middlewares/auth.js';
 import {asyncHandler} from '../middlewares/error.js';
 const router=Router();router.use(authenticate,adminOnly);

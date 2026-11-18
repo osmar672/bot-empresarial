@@ -1,15 +1,9 @@
-import {useState} from 'react';
+import {useRef,useState} from 'react';
+import {Search,ShieldCheck,X} from 'lucide-react';
 export default function RoleAccess({roles,selected,onChange,disabled=false}){
- const [query,setQuery]=useState('');
+ const dialog=useRef(null),[query,setQuery]=useState(''),[department,setDepartment]=useState('');
  const normalize=s=>s.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
- const visible=roles.filter(r=>normalize(r.label+' '+r.department).includes(normalize(query)));
- const count=new Set(['admin',...selected]).size;
- return <details className="role-access"><summary>Acceso: {count} de {roles.length} roles</summary>
-  <label className="field">Buscar rol o área<input type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Ej. Finanzas, analista…"/></label>
-  <div className="role-access-list">{visible.map(role=><label className="role-access-option" key={role.code}>
-   <input type="checkbox" checked={role.code==='admin'||selected.includes(role.code)} disabled={disabled||role.code==='admin'} onChange={e=>onChange(e.target.checked?[...new Set(['admin',...selected,role.code])]:['admin',...selected.filter(r=>r!=='admin'&&r!==role.code)])}/>
-   <span>{role.label}<small>{role.department}</small></span>
-  </label>)}{!visible.length&&<p>No hay roles que coincidan con la búsqueda.</p>}</div>
-  <p className="fineprint">Solo Administrador gestiona el sistema. Los demás cargos necesitan acceso explícito a cada documento.</p>
- </details>;
+ const visible=roles.filter(r=>(!department||r.department===department)&&normalize(r.label+' '+r.department).includes(normalize(query)));
+ function select(codes,checked){onChange([...new Set(['admin',...(checked?[...selected,...codes]:selected.filter(c=>!codes.includes(c)))])]);}
+ return <div className="role-access"><button type="button" className="access-trigger" disabled={disabled} onClick={()=>dialog.current.showModal()}><ShieldCheck size={15}/>{selected.filter(r=>r!=='admin').length?`${new Set(['admin',...selected]).size} roles con acceso`:'Solo administración'}</button><dialog ref={dialog} className="access-dialog"><div className="section-heading"><div><h2>Acceso al documento</h2><p>Elige qué cargos pueden consultar esta fuente.</p></div><button type="button" className="icon-button" aria-label="Cerrar permisos" onClick={()=>dialog.current.close()}><X size={20}/></button></div><label className="field">Buscar cargo<input type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar por nombre o departamento"/></label><label className="field">Departamento<select value={department} onChange={e=>setDepartment(e.target.value)}><option value="">Todos los departamentos</option>{[...new Set(roles.map(r=>r.department))].map(d=><option key={d}>{d}</option>)}</select></label><div className="access-toolbar"><span>{new Set(['admin',...selected]).size} de {roles.length} roles</span><button type="button" className="text-button" disabled={disabled} onClick={()=>select(visible.map(r=>r.code),true)}>Seleccionar visibles</button><button type="button" className="text-button" disabled={disabled} onClick={()=>select(visible.map(r=>r.code),false)}>Quitar visibles</button></div><div className="role-access-list">{visible.map(role=><label className="role-access-option" key={role.code}><input type="checkbox" checked={role.code==='admin'||selected.includes(role.code)} disabled={disabled||role.code==='admin'} onChange={e=>select([role.code],e.target.checked)}/><span>{role.label}<small>{role.department}</small></span></label>)}{!visible.length&&<p>No encontramos cargos con esa búsqueda.</p>}</div><div className="access-footer"><p>Administración conserva siempre el acceso.</p><button type="button" className="btn btn-primary" onClick={()=>dialog.current.close()}>Listo</button></div></dialog></div>;
 }

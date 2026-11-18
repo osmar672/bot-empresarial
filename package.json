@@ -17,7 +17,8 @@
     "db:seed": "npm run seed -w backend",
     "test": "npm run test -w backend",
     "smoke": "node scripts/smoke-api.mjs",
-    "test:integration": "node --test scripts/access.integration.mjs"
+    "test:integration": "node --test scripts/access.integration.mjs",
+    "test:files": "node scripts/profile-files.integration.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

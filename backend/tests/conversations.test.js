@@ -39,16 +39,16 @@ test('las funciones de chat.service filtran estrictamente por tenant y usuario',
   const src = fs.readFileSync(path.join(root, 'backend/src/services/chat.service.js'), 'utf8');
 
   // listConversations filtra por company_id y user_id
-  assert.match(src, /WHERE c\.company_id\s*=\s*\?\s*AND c\.user_id\s*=\s*\?/);
+  assert.match(src, /WHERE company_id\s*=\s*\?\s*AND user_id\s*=\s*\?/);
 
   // getConversation filtra por id, company_id y user_id
   assert.match(src, /WHERE id\s*=\s*\?\s*AND company_id\s*=\s*\?\s*AND user_id\s*=\s*\?/);
 
   // getConversationMemory filtra por conversation_id, company_id y user_id
-  assert.match(src, /WHERE conversation_id\s*=\s*\?\s*AND company_id\s*=\s*\?\s*AND user_id\s*=\s*\?/);
+  assert.match(src, /WHERE company_id=\? AND user_id=\? AND \(\? IS NULL OR conversation_id=\?\)/);
 
   // deleteConversation filtra por id, company_id y user_id
-  assert.match(src, /DELETE FROM pb_conversations WHERE id\s*=\s*\?\s*AND company_id\s*=\s*\?\s*AND user_id\s*=\s*\?/);
+  assert.match(fs.readFileSync(path.join(root,'backend/src/routes/chat.routes.js'),'utf8'), /DELETE FROM pb_conversations WHERE id=\? AND company_id=\? AND user_id=\?/);
 });
 
 test('buildPrompt genera memoria conversacional respetando roles y prioridad documental', () => {
@@ -61,7 +61,7 @@ test('buildPrompt genera memoria conversacional respetando roles y prioridad doc
   ];
   const question = '¿Y a partir de qué mes puedo solicitarlas?';
 
-  const prompt = buildPrompt('Café Montaña S.A.', sources, question, history);
+  const prompt = buildPrompt('Café Montaña S.A.', sources, question, {previous:[{question:history[0].text,answer:history[1].text}]});
 
   // Debe tener: 1 system, 2 history (user, assistant), 1 current user = 4 mensajes
   assert.equal(prompt.length, 4);
@@ -83,7 +83,7 @@ test('buildPrompt funciona sin historial previo (primera pregunta)', () => {
   const sources = [
     { ref: 1, document_name: 'teletrabajo.txt', content: 'Teletrabajo permitido 2 días por semana.' }
   ];
-  const prompt = buildPrompt('Logística Pacífico', sources, '¿Puedo hacer teletrabajo?', []);
+  const prompt = buildPrompt('Logística Pacífico', sources, '¿Puedo hacer teletrabajo?');
 
   assert.equal(prompt.length, 2);
   assert.equal(prompt[0].role, 'system');

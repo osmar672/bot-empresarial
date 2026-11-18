@@ -7,6 +7,7 @@ import users from './routes/users.routes.js';
 import roles from './routes/roles.routes.js';
 import docs from './routes/documents.routes.js';
 import drive from './routes/drive.routes.js';
+import profile from './routes/profile.routes.js';
 import chat from './routes/chat.routes.js';
 import usage from './routes/usage.routes.js';
 import {errors} from './middlewares/error.js';
@@ -25,7 +26,7 @@ app.use('/api',(req,res,next)=>{
   }next();
 });
 app.get('/api/health',(_req,res)=>res.json({ok:true,app:'PolicyBot',database:'mysql',chat:'groq'}));
-app.use('/api/auth',auth);app.use('/api/users',users);app.use('/api/roles',roles);app.use('/api/documents',docs);app.use('/api/drive',drive);app.use('/api/chat',chat);app.use('/api/usage',usage);
+app.use('/api/profile',profile);app.use('/api/auth',auth);app.use('/api/users',users);app.use('/api/roles',roles);app.use('/api/documents',docs);app.use('/api/drive',drive);app.use('/api/chat',chat);app.use('/api/usage',usage);
 app.use('/api',(_req,_res,next)=>next(new HttpError(404,'Ruta no encontrada')));
 const dist=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../frontend/dist');
 app.use(express.static(dist,{maxAge:env.nodeEnv==='production'?'1h':0}));
