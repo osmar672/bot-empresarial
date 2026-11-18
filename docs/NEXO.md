@@ -70,3 +70,7 @@ Los avisos distinguen éxito, información y errores. Muestran el código HTTP r
 - 5xx: fallo interno (500), proveedor externo (502), servicio no disponible (503) o tiempo de espera (504).
 
 Las respuestas de error del backend incluyen error, status y code; la validación también incluye details. Los errores inesperados no exponen datos internos en la respuesta al usuario.
+
+## Interfaz del asistente
+
+La conversación utiliza una sola columna. El botón Historial abre un panel de búsqueda que se cierra con Escape o al seleccionar una conversación. Nuevo chat inicia un hilo vacío, sin borrar los anteriores. Las respuestas agrupan fuentes y copiar en su pie; los enlaces conservan la comprobación de permisos del servidor. La biblioteca y la navegación principal siguen disponibles. La estructura está en Chat.jsx y los estilos específicos en frontend/src/styles/chat-workspace.css.

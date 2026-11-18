@@ -4,4 +4,5 @@ import ConfirmProvider from './components/ConfirmProvider.jsx';
 import App from './app/App.jsx';
 import {AuthProvider} from './context/AuthContext.jsx';
 import './styles/global.css';
+import './styles/chat-workspace.css';
 createRoot(document.getElementById('root')).render(<React.StrictMode><AuthProvider><ConfirmProvider><App/></ConfirmProvider></AuthProvider></React.StrictMode>);
