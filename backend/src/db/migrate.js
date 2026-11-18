@@ -50,7 +50,18 @@ async function applyStatements(cx,sql){
  for(const statement of splitSQL(sql.replace(/^\s*--.*$/gm,''),';')){
   const value=statement.trim();if(!value)continue;
   const alter=value.match(/^ALTER TABLE (\w+)\s+([\s\S]+)$/i);
-  if(!alter){await cx.query(value);continue;}
+  if(!alter){
+   // CREATE IF NOT EXISTS does not upgrade an older conversations table.
+   // Reconcile columns used by the historical backfill without rewriting SQL checksums.
+   if(/^CREATE TABLE IF NOT EXISTS pb_conversations\s*\(/i.test(value)){
+    await cx.query(value);
+    await applyStatements(cx,`ALTER TABLE pb_conversations
+     ADD COLUMN updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+     ADD UNIQUE KEY uq_conv_tenant (id,company_id),
+     ADD UNIQUE KEY uq_conversation_owner (id,company_id,user_id);`);
+   }else await cx.query(value);
+   continue;
+  }
   const [,table,body]=alter;
   for(let clause of splitSQL(body,',')){
    clause=clause.trim();
@@ -58,6 +69,11 @@ async function applyStatements(cx,sql){
    if(col){const [rows]=await cx.execute('SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? AND COLUMN_NAME=?',[table,col[1]]);if(rows.length)continue;clause=clause.replace('IF NOT EXISTS ','');}
    const idx=clause.match(/^ADD (?:UNIQUE KEY|INDEX|KEY) (\w+)/i);
    if(idx){const [rows]=await cx.execute('SELECT 1 FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=? AND INDEX_NAME=?',[table,idx[1]]);if(rows.length)continue;}
+   const constraint=clause.match(/^ADD CONSTRAINT (\w+)\s/i);
+   if(constraint){
+    const [rows]=await cx.execute('SELECT 1 FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA=DATABASE() AND TABLE_NAME=? AND CONSTRAINT_NAME=?',[table,constraint[1]]);
+    if(rows.length)continue;
+   }
    if(/REFERENCES pb_conversations\(id,company_id,user_id\)/i.test(clause)){
     const [rows]=await cx.query("SHOW INDEX FROM pb_conversations WHERE Key_name='uq_conversation_owner'");
     if(!rows.length)await cx.query('ALTER TABLE pb_conversations ADD UNIQUE KEY uq_conversation_owner (id,company_id,user_id)');
