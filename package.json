@@ -33,7 +33,8 @@
     "predb:photos": "node scripts/ensure-dependencies.mjs --backend",
     "predb:migrate": "node scripts/ensure-dependencies.mjs --backend",
     "predb:status": "node scripts/ensure-dependencies.mjs --backend",
-    "predb:dry-run": "node scripts/ensure-dependencies.mjs --backend"
+    "predb:dry-run": "node scripts/ensure-dependencies.mjs --backend",
+    "test:profile-customization": "node scripts/profile-customization.integration.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

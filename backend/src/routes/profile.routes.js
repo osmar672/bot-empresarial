@@ -1,3 +1,5 @@
+import {getAppearance,saveAppearance} from '../services/profilePreferences.service.js';
+import {getPunctuality} from '../services/punctuality.service.js';
 import {Router} from 'express';
 import multer from 'multer';
 import {randomUUID} from 'node:crypto';
@@ -27,9 +29,24 @@ router.delete('/photo',asyncHandler(async(req,res)=>{
  await run('DELETE FROM pb_user_photos WHERE user_id=? AND company_id=?',[req.user.id,req.companyId]);
  res.json({photo_url:null});
 }));
+router.put('/appearance',asyncHandler(async(req,res)=>res.json({appearance:await saveAppearance(req.user.id,req.companyId,req.body)})));
+router.get('/punctuality',asyncHandler(async(req,res)=>res.json({punctuality:await getPunctuality(req.companyId,req.user.id)})));
+router.put('/cover',uploadPhoto,asyncHandler(async(req,res)=>{
+ if(!req.file)throw new HttpError(400,'Selecciona una portada');
+ const image=await normalizePhoto(req.file.buffer,{cover:true}),version=randomUUID();
+ await run('INSERT INTO pb_profile_covers(user_id,company_id,version,image) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE image=VALUES(image),version=VALUES(version)',[req.user.id,req.companyId,version,image]);
+ res.json({cover_url:'/api/profile/cover?v='+version});
+}));
+router.get('/cover',asyncHandler(async(req,res)=>{
+ const row=await one('SELECT image FROM pb_profile_covers WHERE user_id=? AND company_id=?',[req.user.id,req.companyId]);
+ if(!row)throw new HttpError(404,'Sin portada');
+ res.set({'Content-Type':'image/webp','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}).send(row.image);
+}));
+router.delete('/cover',asyncHandler(async(req,res)=>{await run('DELETE FROM pb_profile_covers WHERE user_id=? AND company_id=?',[req.user.id,req.companyId]);res.json({cover_url:null});}));
 router.get('/',asyncHandler(async(req,res)=>{
  const profile=await one('SELECT p.*,u.name,u.email,r.label AS role_label FROM pb_users u JOIN pb_roles r ON r.code=u.role LEFT JOIN pb_employee_profiles p ON p.user_id=u.id AND p.company_id=u.company_id WHERE u.id=? AND u.company_id=?',[req.user.id,req.companyId]);
- res.json({profile:{...profile,photo_url:await photoUrl(req.user.id,req.companyId)}});
+ const [appearance,cover]=await Promise.all([getAppearance(req.user.id,req.companyId),one('SELECT version FROM pb_profile_covers WHERE user_id=? AND company_id=?',[req.user.id,req.companyId])]);
+ res.json({profile:{...profile,photo_url:await photoUrl(req.user.id,req.companyId),appearance,cover_url:cover?'/api/profile/cover?v='+cover.version:null}});
 }));
 router.get('/:id',adminOnly,asyncHandler(async(req,res)=>{
  const profile=await one('SELECT p.*,u.name,u.email FROM pb_users u LEFT JOIN pb_employee_profiles p ON p.user_id=u.id AND p.company_id=u.company_id WHERE u.id=? AND u.company_id=?',[idSchema.parse(req.params.id),req.companyId]);

@@ -28,7 +28,7 @@ export function AttendanceProvider({children}){
  function show(){dismissAttendanceOffer();setExiting(false);setOpen(true);setError(null);refresh().catch(setError);}
  function requestLogout(){dismissAttendanceOffer();setExiting(true);setOpen(true);setError(null);refresh().catch(setError);}
  async function mark(direction,entryId=data?.openEntry?.id){if(working.current)return false;working.current=true;readSequence.current++;setBusy(true);setError(null);setSuccess(null);
-  try{const result=await api('/attendance/'+direction,{method:'POST',body:direction==='out'&&entryId?{entryId}:{}});try{await refresh();}catch(updateError){setError(new Error('La marcación se guardó, pero no se pudo actualizar la vista. Pulsa Reintentar conexión antes de volver a marcar.'));}channel.current?.postMessage({userId:session.user.id});dismissAttendanceOffer();setSuccess({message:direction==='in'?'Tu entrada quedó registrada. ¡Buena jornada!':'Tu salida quedó registrada. ¡Hasta pronto!',status:result[HTTP_STATUS]});return true;}
+  try{const result=await api('/attendance/'+direction,{method:'POST',body:direction==='out'&&entryId?{entryId}:{}});try{await refresh();}catch(updateError){setError(new Error('La marcación se guardó, pero no se pudo actualizar la vista. Pulsa Reintentar conexión antes de volver a marcar.'));}channel.current?.postMessage({userId:session.user.id});window.dispatchEvent(new Event('luma:attendance-changed'));dismissAttendanceOffer();setSuccess({message:direction==='in'?'Tu entrada quedó registrada. ¡Buena jornada!':'Tu salida quedó registrada. ¡Hasta pronto!',status:result[HTTP_STATUS]});return true;}
   catch(e){setError(e);await refresh().catch(()=>{});return false;}
   finally{working.current=false;setBusy(false);}
  }

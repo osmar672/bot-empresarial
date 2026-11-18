@@ -1,3 +1,4 @@
+import {recordPunctuality} from '../services/punctuality.service.js';
 import {Router} from 'express';
 import {randomUUID} from 'node:crypto';
 import {z} from 'zod';
@@ -37,6 +38,7 @@ async function mark(req,checkIn){
   if(checkIn){
    if(open.length)throw new HttpError(409,'Ya tienes una entrada registrada. Marca la salida antes de iniciar otra jornada.');
    const id=randomUUID();await cx.execute('INSERT INTO pb_attendance(id,company_id,user_id,checked_in_at) VALUES (?,?,?,UTC_TIMESTAMP(3))',[id,req.companyId,req.user.id]);
+   await recordPunctuality(cx,{companyId:req.companyId,userId:req.user.id,entryId:id});
    return {ok:true,id};
   }
   if(!open.length)throw new HttpError(409,'No tienes una jornada abierta. Primero debes marcar la entrada.');

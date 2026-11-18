@@ -1,0 +1,21 @@
+.drive-saved-folder {
+  border: 1px solid #dceadf;
+  border-radius: 12px;
+  background: #f4faf6;
+  padding: 18px;
+  margin: 22px 0;
+  color: #346451;
+}
+.drive-saved-folder > strong {
+  font-size: 14px;
+}
+.drive-saved-folder p {
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 9px 0 15px;
+}
+.drive-saved-folder .text-button {
+  display: inline-block;
+  font-size: 12px;
+  margin: 0 16px 0 0;
+}
