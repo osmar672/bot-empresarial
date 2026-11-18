@@ -86,3 +86,71 @@
 .ai-workspace .compose-box textarea:focus-visible{outline:none;box-shadow:none}
 
 .chat-toolbar-actions{display:flex;align-items:center;gap:6px;margin-left:auto;flex-shrink:0}
+
+/* Keep the empty state useful even on short windows and at browser zoom. */
+.ai-workspace .chat-welcome{padding:clamp(18px,4dvh,42px) 28px 20px;max-width:800px}
+.welcome-intro{display:flex;align-items:center;gap:25px;margin-bottom:20px}
+.welcome-intro-copy{min-width:0}
+.ai-workspace .welcome-intro .welcome-caption{margin:0 0 10px;font-size:9px}
+.ai-workspace .welcome-intro h2{margin:0 0 7px;font-size:clamp(25px,2.8vw,34px);line-height:1.2;overflow-wrap:anywhere}
+.welcome-intro-copy>p{font-size:17px;color:#9b85aa;line-height:1.5;margin:0}
+.ai-workspace .chat-welcome>.welcome-description{font-size:12px;line-height:1.7;max-width:none;margin:0 0 18px;color:#9b88a8}
+.ai-workspace .chat-welcome .prompt-examples{margin-bottom:16px}
+.ai-workspace .chat-welcome .prompt-examples button{min-height:85px;gap:7px;padding:12px 28px 12px 13px;font-size:11px;line-height:1.6}
+.ai-workspace .chat-welcome .prompt-examples button>svg{top:13px;right:10px;width:13px;height:13px}
+.ai-workspace .chat-welcome .prompt-number{font-size:9px}
+.ai-workspace .chat-welcome .link-inline{font-size:10px}
+.ai-workspace .welcome-intro .penguin-hero{--penguin-size:98px;margin:0;gap:0;flex-shrink:0}
+.ai-workspace .welcome-intro .penguin-caption strong{font-size:9px;background:#f1eaf7;border:1px solid #e9e0f0;border-radius:20px;padding:3px 9px;white-space:nowrap}
+.ai-workspace .welcome-intro .penguin-motion-toggle{right:-2px;top:0;bottom:auto;width:22px;height:22px;border-radius:50%;background:#fffcf8;color:#ab94b9}
+@media(max-width:650px){
+ .ai-workspace .chat-welcome{padding:20px 20px 16px}
+ .welcome-intro{gap:17px;margin-bottom:17px}
+ .ai-workspace .welcome-intro .penguin-hero{--penguin-size:78px}
+ .ai-workspace .welcome-intro h2{font-size:25px}
+ .ai-workspace .welcome-intro .welcome-caption{font-size:7px;letter-spacing:.1em;margin-bottom:8px}
+ .welcome-intro-copy>p{font-size:14px}
+ .ai-workspace .chat-welcome>.welcome-description{font-size:11px;margin-bottom:13px}
+ .ai-workspace .chat-welcome .prompt-examples button{min-height:0;padding:10px 30px 10px 12px;gap:10px}
+}
+@media(max-height:650px) and (min-width:651px){
+ .ai-workspace .chat-welcome{padding-top:16px}
+ .ai-workspace .welcome-intro .penguin-hero{--penguin-size:76px}
+ .welcome-intro{margin-bottom:12px;gap:20px}
+ .ai-workspace .welcome-intro h2{font-size:27px}
+ .ai-workspace .chat-welcome>.welcome-description{margin-bottom:12px}
+ .ai-workspace .chat-welcome .prompt-examples button{min-height:65px;padding-top:10px;padding-bottom:10px;gap:3px}
+}
+@media(max-height:550px){
+ .ai-workspace .chat-welcome{padding-top:10px;padding-bottom:10px}
+ .ai-workspace .welcome-intro{margin-bottom:10px;gap:14px}
+ .ai-workspace .welcome-intro .penguin-hero{--penguin-size:58px}
+ .ai-workspace .welcome-intro .welcome-caption,.ai-workspace .chat-welcome>.welcome-description{display:none}
+ .ai-workspace .welcome-intro h2{font-size:23px;margin-bottom:4px}
+ .welcome-intro-copy>p{font-size:13px}
+ .ai-workspace .chat-welcome .prompt-examples{margin-bottom:9px;gap:6px}
+ .ai-workspace .chat-welcome .prompt-examples button{min-height:0;padding-top:8px;padding-bottom:8px;font-size:10px;gap:5px}
+}
+
+/* Explicit microphone and voice-session controls; typed chat always remains available. */
+.composer-voice-actions{display:flex;align-items:center;gap:7px}
+.voice-button{display:grid;place-items:center;width:34px;height:34px;padding:0;border:0;border-radius:50%;background:transparent;color:#9c84ad;flex-shrink:0}
+.voice-button:hover{background:#f0e7f7;color:#78528e}
+.voice-mode-button{background:#815fa8;color:white}
+.voice-mode-button:hover,.voice-mode-active{background:#67468e;color:#fff}
+.voice-button-recording{background:#fbe9ed;color:#bd5769;box-shadow:0 0 0 3px #f9e8ee}
+.voice-session{display:flex;align-items:center;gap:12px;margin:0 0 10px;padding:12px 14px;border:1px solid #e4d6ef;background:#f6f0fb;border-radius:13px;color:#8d70a0;min-width:0}
+.voice-session>div:nth-child(2){min-width:0;flex:1}
+.voice-session strong{font-size:11px;font-weight:600}
+.voice-session p{font-size:10px;line-height:1.6;margin:3px 0 0;overflow-wrap:anywhere;max-height:65px;overflow:auto}
+.voice-wave{height:24px;display:flex;align-items:center;gap:3px;flex-shrink:0}
+.voice-wave i{width:3px;height:7px;border-radius:4px;background:#a085b7}
+.voice-wave-active i{animation:voice-wave .8s ease-in-out infinite alternate}
+.voice-wave i:nth-child(2),.voice-wave i:nth-child(4){height:15px;animation-delay:.15s}.voice-wave i:nth-child(3){height:22px;animation-delay:.3s}
+.ai-workspace .answer-tools{padding-right:108px}
+.read-answer{position:absolute;right:72px;top:0;display:grid;place-items:center;width:28px;height:28px;border:0;border-radius:7px;background:transparent;color:#a18aac}
+.read-answer:hover{background:#eee5f5;color:#79588f}
+@keyframes voice-wave{from{transform:scaleY(.4)}to{transform:scaleY(1)}}
+@media(prefers-reduced-motion:reduce){.voice-wave-active i{animation:none!important}}
+@media(max-width:650px){.compose-controls>span{font-size:8px;max-width:44%;line-height:1.5}.composer-voice-actions{gap:4px}.voice-button{width:32px;height:32px}.voice-session{padding:10px;gap:9px}}
+@media(max-height:600px){.voice-session{padding:8px 10px;gap:8px;margin-bottom:6px}.voice-session p{max-height:32px}.chat-compose:has(.voice-session) .penguin-caption>span{display:none}.chat-compose:has(.voice-session) .penguin-dock{--penguin-size:38px;min-height:38px;padding-bottom:3px}}

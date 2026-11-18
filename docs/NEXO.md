@@ -81,6 +81,38 @@ El pingüino de Luma es un recurso PNG transparente en frontend/public/mascot/lu
 
 Estados conectados al flujo del chat: espera, lectura del texto del usuario, carga del historial, preparación de respuesta, llegada de fragmentos de texto, finalización, interrupción y error. La preparación comienza al enviar; la animación de respuesta se activa al recibir un evento delta y la celebración al finalizar la solicitud. Al detener una respuesta vacía se muestra un mensaje de interrupción, no un indicador de escritura infinito.
 
-Pulsar la mascota activa un saludo. El control Pausar animaciones conserva la preferencia en este navegador. prefers-reduced-motion desactiva los movimientos, incluido el saludo, manteniendo los mensajes de estado. La mascota no reproduce audio ni accede al micrófono.
+La mascota saluda al abrir una conversación nueva y reacciona al tocarla, enfocarla o pasar el cursor. En la bienvenida, hace un saludo ocasional mientras espera; no lo repite en pestañas ocultas ni mientras el usuario escribe. No tiene botón de pausa visible. prefers-reduced-motion desactiva los movimientos y el seguimiento del cursor, incluido el saludo, manteniendo los mensajes de estado. La mascota no reproduce audio ni accede al micrófono.
 
-Se verificaron los estados con respuestas HTTP y SSE simuladas en navegador, la pausa, el saludo, movimiento reducido y la visibilidad del cuadro de escritura en móvil; esas comprobaciones no acreditan llamadas reales al proveedor de IA.
+Se verificaron los estados con respuestas HTTP y SSE simuladas en navegador, el saludo automático y al pasar el cursor, seguimiento del puntero, ausencia del botón de pausa, movimiento reducido y la visibilidad del cuadro de escritura en móvil; esas comprobaciones no acreditan llamadas reales al proveedor de IA.
+
+### Ayuda por inactividad
+
+Tras 20 segundos sin actividad y con el campo vacío, el pingüino muestra una invitación breve como «¿Necesitas ayuda con algo?». El aviso dura 8 segundos y no se repite hasta que haya nueva interacción. Es un mensaje local de interfaz: no envía preguntas a la IA ni crea mensajes en el historial.
+
+Escribir, pulsar o desplazarse reinicia la espera. No aparece mientras hay un borrador, una respuesta en curso, un error, el historial abierto ni la pestaña oculta. Al volver a la pestaña comienza una espera nueva. Las animaciones siguen respetando prefers-reduced-motion.
+
+## Preguntas y respuestas por voz
+
+- Micrófono: dicta una pregunta en español y la coloca en el campo para revisarla; no la envía automáticamente.
+- Ondas de voz: activa una sesión explícita de conversación. Al terminar de reconocer una pregunta, la envía, lee la respuesta completa y vuelve a escuchar. Cerrar modo de voz detiene micrófono y lectura. La generación de texto en curso tiene su propio botón Detener respuesta.
+- Altavoz junto a una respuesta: lectura manual. Detener lectura cancela el audio.
+
+Usa SpeechRecognition/webkitSpeechRecognition y speechSynthesis del navegador. El dictado funciona solo donde el navegador lo ofrece (habitualmente Chrome o Edge), requiere permiso de micrófono y HTTPS o localhost. La disponibilidad, voces e idioma dependen del navegador y del sistema. El reconocimiento puede usar servicios externos del navegador; no se garantiza procesamiento local ni funcionamiento sin Internet. La aplicación no guarda grabaciones de audio; guarda la pregunta transcrita mediante el flujo habitual del chat.
+
+La sesión se detiene al cambiar de página, abrir otro historial, iniciar chat nuevo, ocultar la pestaña, perder permisos o fallar el servicio de voz. No se activa al cargar la página. No reconoce mientras lee para evitar transcribir su propia voz. La mascota distingue escucha de micrófono y reproducción.
+
+La lectura elimina marcas de Markdown, enlaces y números de citas y divide respuestas largas en fragmentos. Las funciones de reconocimiento y síntesis fueron verificadas con APIs simuladas en navegador, junto con dictado revisable, envío explícito, conversación automática, interrupción, permisos denegados y diseño móvil. La captura y reproducción reales con hardware requieren validación en el navegador del usuario.
+
+## Marcar ficha: entrada y salida
+
+Aplicar `npm run db:migrate` antes de iniciar la versión con marcaciones. La migración 005_attendance.sql añade pb_attendance sin modificar jornadas anteriores ni tablas ajenas.
+
+Al iniciar sesión se ofrece un recordatorio opcional. El botón Marcar ficha permanece en la barra superior; Mi perfil muestra el estado y las últimas 30 jornadas con entrada, salida y duración de jornadas cerradas. Cada usuario consulta y marca únicamente su propia jornada, dentro de su empresa.
+
+Entrada y salida se guardan con UTC_TIMESTAMP del servidor MySQL; la interfaz muestra America/Costa_Rica. No se aceptan horas ni identidades suministradas por el cliente. Un bloqueo transaccional y una restricción única impiden dos jornadas abiertas incluso con solicitudes concurrentes.
+
+Cerrar sesión ofrece Marcar salida y salir, Salir sin marcar o Volver cuando hay una jornada abierta. No se registra nada por iniciar sesión, cerrar pestaña, perder conexión o salir sin marcar. Si falla el registro de salida, la sesión se mantiene abierta y se muestra el error. Si no se puede consultar el estado de jornada, sigue disponible salir sin marcar.
+
+Las marcaciones no alteran automáticamente vacaciones, horarios ni saldos laborales. No se ha añadido edición retroactiva o gestión de marcaciones de otras personas.
+
+Validación adicional: `npm run test:attendance` prueba contra la base local migrada: autenticación, hora del servidor, rechazo de suplantación, concurrencia, privacidad entre empleados/empresas y cierre de sesión sin salida automática. Crea y elimina sus empresas de prueba.

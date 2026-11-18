@@ -43,3 +43,32 @@
 @media(max-width:650px){.penguin-hero{--penguin-size:96px;margin-bottom:18px}.penguin-dock{--penguin-size:48px;min-height:50px;gap:8px}.penguin-caption>span{font-size:9px}.penguin-caption strong{font-size:10px}}
 .penguin-paused .penguin-stage .penguin-character{animation:none!important}
 @media(prefers-reduced-motion:reduce){.penguin-companion .penguin-stage .penguin-character{animation:none!important}}
+
+/* A welcome hop, playful lean and pointer reactions; no on-screen pause control. */
+.penguin-body{position:relative;display:block;width:100%;height:100%;z-index:2;transform:translateX(var(--penguin-shift,0px)) rotate(var(--penguin-look,0deg));transform-origin:50% 85%;transition:transform .25s ease-out}
+.penguin-companion[data-state=idle] .penguin-character{animation:penguin-alive 9s ease-in-out infinite}
+.penguin-wave .penguin-character{animation:penguin-hello 1.8s ease-in-out 1!important}
+.penguin-wave .penguin-shadow{animation:penguin-hello-shadow 1.8s ease-in-out 1}
+.penguin-wave .penguin-spark{animation:penguin-sparkle .9s ease-out 2}
+.penguin-hello-bubble{position:absolute;z-index:4;right:-24%;top:2%;display:flex;align-items:center;gap:4px;background:#fffdfa;color:#8e6baa;border:1px solid #e5d7ef;border-radius:10px 10px 10px 2px;padding:5px 8px;font-size:10px;white-space:nowrap;box-shadow:0 3px 10px #5830710c;animation:penguin-hello-caption 1.8s ease-out 1;pointer-events:none}
+.penguin-hello-bubble>span{color:#bc9bd2;font-size:9px}
+.penguin-dock .penguin-hello-bubble{right:-50%;top:-3%;font-size:8px;padding:3px 5px}
+@keyframes penguin-alive{0%,100%{transform:translateY(0) rotate(0)}18%{transform:translateY(-3px) scale(1.02)}30%{transform:rotate(-4deg)}40%{transform:rotate(3deg)}52%{transform:rotate(0) translateY(-2px)}72%{transform:rotate(2deg)}84%{transform:translateY(-3px) rotate(0)}}
+@keyframes penguin-hello{0%{transform:translateY(0) scale(1)}10%{transform:translateY(2px) scale(1.06,.94)}25%{transform:translateY(-11px) rotate(-9deg) scale(.98,1.03)}39%{transform:translateY(-4px) rotate(10deg)}52%{transform:translateY(-8px) rotate(-9deg)}65%{transform:translateY(-3px) rotate(7deg)}78%{transform:translateY(1px) scale(1.04,.96)}90%{transform:translateY(-2px) rotate(-2deg)}100%{transform:translateY(0) rotate(0) scale(1)}}
+@keyframes penguin-hello-shadow{0%,100%{transform:scaleX(1);opacity:.8}25%,52%{transform:scaleX(.65);opacity:.3}78%{transform:scaleX(1.1);opacity:.8}}
+@keyframes penguin-hello-caption{0%{opacity:0;transform:translateY(5px) scale(.85)}15%,80%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-4px) scale(.95)}}
+@media(prefers-reduced-motion:reduce){.penguin-companion .penguin-stage .penguin-character,.penguin-companion .penguin-shadow,.penguin-companion .penguin-spark,.penguin-companion .penguin-hello-bubble{animation:none!important}.penguin-body{transform:none!important;transition:none!important}}
+
+/* Inactivity prompts are temporary hints, never messages sent to the AI. */
+.penguin-offering-help .penguin-body{animation:penguin-peek .7s ease-out 1}
+.penguin-offering-help .penguin-stage .penguin-character{animation:penguin-curious 2.4s ease-in-out 2!important}
+.penguin-offering-help .penguin-caption{position:relative;background:#f4eef9;border:1px solid #e7daef;border-radius:12px 12px 12px 3px;padding:9px 12px;animation:penguin-help-appear .3s ease-out 1}
+.penguin-offering-help .penguin-caption strong{color:#80608f}
+.penguin-offering-help .penguin-halo{background:#e8dcf3;opacity:.9}
+@keyframes penguin-peek{from{transform:translateX(-8px) rotate(-8deg);opacity:.4}to{transform:translateX(0) rotate(0);opacity:1}}
+@keyframes penguin-curious{0%,100%{transform:rotate(0) translateY(0)}25%{transform:rotate(-9deg) translateY(-3px)}55%{transform:rotate(7deg) translateY(-4px)}75%{transform:rotate(-3deg)}}
+@keyframes penguin-help-appear{from{opacity:0;transform:translateX(-5px)}to{opacity:1;transform:translateX(0)}}
+@media(prefers-reduced-motion:reduce){.penguin-offering-help .penguin-stage .penguin-character,.penguin-offering-help .penguin-body,.penguin-offering-help .penguin-caption{animation:none!important}}
+.penguin-companion[data-state=hearing] .penguin-character{animation:penguin-listen 2s ease-in-out infinite}
+.penguin-companion[data-state=speaking] .penguin-character{animation:penguin-talk .6s ease-in-out infinite}
+.penguin-companion[data-state=hearing] .penguin-halo{background:#e6d9f3;animation:penguin-shadow 2s ease-in-out infinite}
