@@ -56,6 +56,8 @@ export default function Chat({onDocuments}){
  useEffect(()=>{let ignore=false;api('/chat/conversations').then(data=>{if(!ignore){setThreads(data.conversations);const id=data.conversations[0]?.id||'';setConversationId(id);if(id)loadHistory(id);else setLoading(false);}}).catch(e=>{if(!ignore){setError(e);setLoading(false);}});return()=>{ignore=true;controller.current?.abort();};},[]);
  useLayoutEffect(()=>{
   const element=feed.current;if(!element||loading)return;
+  // The empty welcome screen starts at the top, even when account notices reduce its height.
+  if(!messages.length){element.scrollTop=0;followTail.current=true;setShowJump(false);return;}
   if(restoreScroll.current){const previous=restoreScroll.current;element.scrollTop=previous.top+element.scrollHeight-previous.height;restoreScroll.current=null;}
   else if(followTail.current){element.scrollTop=element.scrollHeight;setShowJump(false);}
  },[messages,busy,loading]);
