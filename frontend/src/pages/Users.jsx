@@ -1,5 +1,6 @@
 import {useCallback,useEffect,useState} from 'react';
 import {ChevronLeft,ChevronRight,ChevronsLeft,ChevronsRight,Plus,Search,UserPlus,Users as UsersIcon,X} from 'lucide-react';
+import {welcomeEmailMessage} from '../services/welcomeEmail.js';
 import {useAuth} from '../context/AuthContext.jsx';
 import EmployeeEditor from '../components/EmployeeEditor.jsx';
 import RoleOptions from '../components/RoleOptions.jsx';
@@ -90,7 +91,8 @@ export default function Users(){
   setBusy(true);setError('');
   try{
    const result=await api('/users',{method:'POST',body:Object.fromEntries(new FormData(form).entries())});
-   setSuccess({message:'Usuario creado. Compártele sus credenciales por un canal seguro.',status:result[HTTP_STATUS]});
+   const emailNotice=result.welcomeEmail?.status?welcomeEmailMessage(result.welcomeEmail.status)+' ':'';
+   setSuccess({message:`${emailNotice}Usuario creado. Compártele sus credenciales por un canal seguro.`,status:result[HTTP_STATUS]});
    form.reset();
    setShow(false);
    setSearchInput('');

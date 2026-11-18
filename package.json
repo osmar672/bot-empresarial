@@ -20,7 +20,8 @@
     "smoke": "node scripts/smoke-api.mjs",
     "test:integration": "node --test scripts/access.integration.mjs",
     "test:files": "node scripts/profile-files.integration.mjs",
-    "test:attendance": "node scripts/attendance.integration.mjs"
+    "test:attendance": "node scripts/attendance.integration.mjs",
+    "test:workforce": "node scripts/workforce.integration.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

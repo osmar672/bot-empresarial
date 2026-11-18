@@ -16,6 +16,17 @@ router.get('/',asyncHandler(async(req,res)=>{
  ]);
  res.json({openEntry,entries,serverTime:clock.server_time});
 }));
+router.get('/history',asyncHandler(async(req,res)=>{
+ const query=z.object({from:z.string().date().optional(),to:z.string().date().optional(),weekday:z.coerce.number().int().min(0).max(6).optional(),page:z.coerce.number().int().min(1).max(100000).default(1)}).strict().parse(req.query);
+ if(query.from&&query.to&&query.from>query.to)throw new HttpError(400,'La fecha final debe ser posterior a la inicial');
+ const clauses=['company_id=?','user_id=?'],params=[req.companyId,req.user.id];
+ if(query.from){clauses.push('DATE(DATE_SUB(checked_in_at,INTERVAL 6 HOUR))>=?');params.push(query.from);}
+ if(query.to){clauses.push('DATE(DATE_SUB(checked_in_at,INTERVAL 6 HOUR))<=?');params.push(query.to);}
+ if(query.weekday!==undefined){clauses.push('WEEKDAY(DATE_SUB(checked_in_at,INTERVAL 6 HOUR))=?');params.push(query.weekday);}
+ const where=clauses.join(' AND '),total=await one('SELECT COUNT(*) AS total FROM pb_attendance WHERE '+where,params);
+ const entries=await many('SELECT id,checked_in_at,checked_out_at,TIMESTAMPDIFF(SECOND,checked_in_at,COALESCE(checked_out_at,UTC_TIMESTAMP(3))) AS duration_seconds FROM pb_attendance WHERE '+where+' ORDER BY checked_in_at DESC,id DESC LIMIT 20 OFFSET '+((query.page-1)*20),params);
+ res.json({entries,total:total.total,page:query.page,pageSize:20});
+}));
 async function mark(req,checkIn){
  emptyBody.parse(req.body||{});
  return transaction(async cx=>{

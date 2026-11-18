@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS pb_work_schedules (
+  id CHAR(36) PRIMARY KEY,
+  company_id CHAR(36) NOT NULL,
+  user_id CHAR(36) NOT NULL,
+  day_of_week TINYINT NOT NULL COMMENT '1=Lunes, 2=Martes, 3=Miercoles, 4=Jueves, 5=Viernes, 6=Sabado, 7=Domingo',
+  day_name VARCHAR(20) NOT NULL,
+  start_time TIME NULL,
+  end_time TIME NULL,
+  break_start_time TIME NULL,
+  break_end_time TIME NULL,
+  state ENUM('laboral','descanso') NOT NULL DEFAULT 'laboral',
+  shift_name VARCHAR(50) NULL,
+  is_random BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  UNIQUE KEY uq_schedule_user_day (company_id, user_id, day_of_week),
+  INDEX ix_schedule_tenant (company_id, day_of_week),
+  INDEX ix_schedule_user (company_id, user_id),
+  CONSTRAINT fk_schedules_company FOREIGN KEY (company_id) REFERENCES pb_companies(id) ON DELETE CASCADE,
+  CONSTRAINT fk_schedules_user FOREIGN KEY (user_id, company_id) REFERENCES pb_users(id, company_id) ON DELETE CASCADE
+) ENGINE=InnoDB;

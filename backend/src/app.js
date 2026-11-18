@@ -2,7 +2,9 @@ import express from 'express';
 import helmet from 'helmet';
 import {fileURLToPath} from 'node:url';
 import path from 'node:path';
+import vacations from './routes/vacations.routes.js';
 import attendance from './routes/attendance.routes.js';
+import schedules from './routes/schedules.routes.js';
 import auth from './routes/auth.routes.js';
 import users from './routes/users.routes.js';
 import roles from './routes/roles.routes.js';
@@ -26,8 +28,8 @@ app.use('/api',(req,res,next)=>{
     }catch{return next(new HttpError(403,'Origen inválido'));}
   }next();
 });
-app.get('/api/health',(_req,res)=>res.json({ok:true,app:'PolicyBot',database:'mysql',chat:'groq'}));
-app.use('/api/attendance',attendance);app.use('/api/profile',profile);app.use('/api/auth',auth);app.use('/api/users',users);app.use('/api/roles',roles);app.use('/api/documents',docs);app.use('/api/drive',drive);app.use('/api/chat',chat);app.use('/api/usage',usage);
+app.get('/api/health',(_req,res)=>res.json({ok:true,app:'Luma',database:'mysql',chat:'groq',features:{attendance:true,attendanceHistory:true,vacationRequests:true,schedules:true}}));
+app.use('/api/schedules',schedules);app.use('/api/vacations',vacations);app.use('/api/attendance',attendance);app.use('/api/profile',profile);app.use('/api/auth',auth);app.use('/api/users',users);app.use('/api/roles',roles);app.use('/api/documents',docs);app.use('/api/drive',drive);app.use('/api/chat',chat);app.use('/api/usage',usage);
 app.use('/api',(_req,_res,next)=>next(new HttpError(404,'Ruta no encontrada')));
 const dist=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../frontend/dist');
 app.use(express.static(dist,{maxAge:env.nodeEnv==='production'?'1h':0}));

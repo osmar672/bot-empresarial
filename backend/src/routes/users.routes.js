@@ -1,3 +1,4 @@
+import {queueWelcome,dispatchWelcome} from '../services/mail.service.js';
 import {Router} from 'express';
 import bcrypt from 'bcryptjs';
 import {randomUUID} from 'node:crypto';
@@ -69,6 +70,7 @@ router.post('/',asyncHandler(async(req,res)=>{
   const data=userSchema.parse(req.body);
   const hash=await bcrypt.hash(data.password,12);
   const id=randomUUID();
+  let mailId;
 
   await transaction(async cx=>{
     // Concurrencia segura: bloqueo de fila a nivel de empresa
@@ -96,9 +98,12 @@ router.post('/',asyncHandler(async(req,res)=>{
       'INSERT INTO pb_users(id,company_id,name,email,password_hash,role) VALUES (?,?,?,?,?,?)',
       [id,req.companyId,data.name,data.email,hash,data.role]
     );
+
+    mailId=await queueWelcome(cx,{id,companyId:req.companyId,email:data.email,name:data.name});
   });
 
-  res.status(201).json({user:{id,name:data.name,email:data.email,role:data.role}});
+  const welcomeEmail=await dispatchWelcome(mailId);
+  res.status(201).json({welcomeEmail,user:{id,name:data.name,email:data.email,role:data.role}});
 }));
 
 router.patch('/:id/role',asyncHandler(async(req,res)=>{
