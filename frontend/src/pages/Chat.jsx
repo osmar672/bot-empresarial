@@ -15,7 +15,6 @@ import {
   ArrowUp,
   Copy,
   Check,
-  ChevronDown,
   FileText,
   MessageSquare,
   MessageSquareText,
@@ -91,7 +90,6 @@ export default function Chat({onDocuments}){
        <div className="messages">{messages.map(m=><article key={m.id} className={'message '+(m.role==='user'?'message-user':'message-bot')} aria-label={m.role==='user'?'Tu mensaje':'Respuesta de Luma'}><div className="message-main">
         <div className="message-content">{m.text?(m.role==='assistant'?<Markdown remarkPlugins={[remarkGfm]} components={{a:({href,children})=><a href={href} target="_blank" rel="noopener noreferrer">{children}</a>}}>{m.text}</Markdown>:m.text):<span className="typing" aria-label="Preparando respuesta"><i/><i/><i/></span>}</div>
         {m.role==='assistant'&&m.text&&<footer className="answer-tools"><button className="read-answer" aria-label={voice.speaking&&voice.readingId===m.id?'Detener lectura':'Escuchar respuesta'} title={voice.speaking&&voice.readingId===m.id?'Detener lectura':'Escuchar respuesta'} onClick={()=>{if(voice.speaking&&voice.readingId===m.id)voice.stopAll();else voice.speak(m.text,m.id);}}>{voice.speaking&&voice.readingId===m.id?<Square size={14}/>:<Volume2 size={15}/>}</button>
-         {m.sources?.length>0&&<details className="sources"><summary><FileText size={13}/><span>{m.sources.length} {m.sources.length===1?'fuente':'fuentes'}</span><ChevronDown size={13}/></summary><div className="source-list">{m.sources.map((source,i)=>source.url?<a key={i} href={source.url} target="_blank" rel="noreferrer noopener" className="source-pill"><span className="source-index">{source.id}</span><span>{source.name}</span><ArrowUpRight size={13}/></a>:<span key={i} className="source-pill"><span className="source-index">{source.id}</span><span>{source.name}</span></span>)}</div></details>}
          <button className="copy-answer" aria-label={copied===m.id?'Respuesta copiada':'Copiar respuesta'} title={copied===m.id?'Copiado':'Copiar respuesta'} onClick={()=>copy(m)}>{copied===m.id?<Check size={15}/>:<Copy size={15}/>}<span>{copied===m.id?'Copiado':'Copiar'}</span></button>
         </footer>}
        </div></article>)}<div ref={messagesEnd}/></div>}
