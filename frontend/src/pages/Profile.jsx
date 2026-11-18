@@ -1,0 +1,12 @@
+import VacationCard from '../components/VacationCard.jsx';
+import AttendanceCard from '../components/AttendanceCard.jsx';
+import {useEffect,useState} from 'react';
+import {CalendarDays,Clock,Briefcase,UserRound} from 'lucide-react';
+import {api} from '../services/api.js';
+import {Notice,Spinner} from '../components/UI.jsx';
+import {useAuth} from '../context/AuthContext.jsx';
+export default function Profile(){
+ const {session}=useAuth(),[profile,setProfile]=useState(null),[error,setError]=useState('');
+ useEffect(()=>{api('/profile').then(d=>setProfile(d.profile)).catch(e=>setError(e));},[]);
+ return <div className="page"><div className="page-heading"><div><div className="eyebrow">MI ESPACIO</div><h1>Mi perfil</h1><p>Tu información y tu jornada, en un solo lugar.</p></div></div><Notice error={error}/>{!profile?(!error&&<Spinner/>):<><section className="profile-hero card"><div className="profile-initial">{profile.name.charAt(0)}</div><div><h2>{profile.name}</h2><p>{profile.email}</p><span className="role-badge">{profile.role_label}</span></div><span className="profile-company">{session.company.name}</span></section><AttendanceCard/><VacationCard/><div className="profile-metrics">{[[CalendarDays,'Días disponibles',profile.vacation_days==null?'Por registrar':`${profile.vacation_days} días`,'Saldo de vacaciones informado por tu empresa'],[Clock,'Horario de trabajo',profile.work_schedule,'Tu jornada habitual'],[CalendarDays,'Días de descanso',profile.rest_days,'Descanso semanal'],[Briefcase,'Cargo',profile.job_title,'Puesto de trabajo']].map(([Icon,label,value,hint])=><section className="card profile-metric" key={label}><Icon size={22}/><span>{label}</span><h2>{value||'Por registrar'}</h2><p>{hint}</p></section>)}</div><section className="card profile-details"><h2>Información laboral</h2><dl><div><dt>Área o departamento</dt><dd>{profile.department||'Por registrar'}</dd></div><div><dt>Fecha de ingreso</dt><dd>{profile.start_date?new Intl.DateTimeFormat('es-CR',{dateStyle:'long',timeZone:'UTC'}).format(new Date(profile.start_date)):'Por registrar'}</dd></div><div><dt>Rol de acceso</dt><dd>{profile.role_label}</dd></div></dl><p className="fineprint">El administrador de tu empresa actualiza estos datos desde Colaboradores. Los días disponibles no se calculan a partir de las políticas generales.</p></section></>}</div>;
+}

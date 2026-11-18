@@ -1,0 +1,35 @@
+CREATE TABLE IF NOT EXISTS pb_vacation_requests (
+ id CHAR(36) PRIMARY KEY,
+ company_id CHAR(36) NOT NULL,
+ user_id CHAR(36) NOT NULL,
+ start_date DATE NOT NULL,
+ end_date DATE NOT NULL,
+ reason TEXT NOT NULL,
+ status ENUM('pending','approved','rejected','cancelled') NOT NULL DEFAULT 'pending',
+ reviewer_id CHAR(36) NULL,
+ review_comment VARCHAR(1000) NULL,
+ created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+ reviewed_at DATETIME(3) NULL,
+ INDEX ix_vacation_owner (company_id,user_id,created_at),
+ INDEX ix_vacation_review (company_id,status,created_at),
+ FOREIGN KEY (user_id,company_id) REFERENCES pb_users(id,company_id) ON DELETE CASCADE,
+ FOREIGN KEY (reviewer_id) REFERENCES pb_users(id) ON DELETE SET NULL,
+ CHECK (end_date>=start_date)
+) ENGINE=InnoDB;
+CREATE TABLE IF NOT EXISTS pb_mail_outbox (
+ id CHAR(36) PRIMARY KEY,
+ company_id CHAR(36) NOT NULL,
+ user_id CHAR(36) NOT NULL,
+ recipient VARCHAR(190) NOT NULL,
+ subject VARCHAR(200) NOT NULL,
+ body TEXT NOT NULL,
+ state ENUM('pending','processing','sent','failed') NOT NULL DEFAULT 'pending',
+ attempts INT NOT NULL DEFAULT 0,
+ next_attempt_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+ updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+ sent_at DATETIME(3) NULL,
+ last_error VARCHAR(120) NULL,
+ UNIQUE KEY uq_welcome_user (user_id),
+ INDEX ix_mail_pending (state,next_attempt_at),
+ FOREIGN KEY (user_id,company_id) REFERENCES pb_users(id,company_id) ON DELETE CASCADE
+) ENGINE=InnoDB;

@@ -18,26 +18,36 @@ Para desarrollo, base `/api` (frontend mediante proxy de Vite). Todas las rutas 
 | GET | `/api/drive` | admin | ID carpeta y última ejecución |
 | PUT | `/api/drive` | admin | `{folderId}` |
 | POST | `/api/drive/sync` | admin | Sincronizar en este momento |
-| GET | `/api/chat/history` | usuario | Últimos 40 pares de mensajes propios |
-| POST | `/api/chat/stream` | usuario | `{question}` → SSE |
-| GET | `/api/usage` | usuario | Cuotas/tokens del mes |
+| GET | `/api/chat/conversations` | usuario | Listar conversaciones del usuario |
+| POST | `/api/chat/conversations` | usuario | Crear conversación `{title}` |
+| GET | `/api/chat/conversations/:id` | usuario | Obtener conversación y sus mensajes |
+| PATCH | `/api/chat/conversations/:id` | usuario | Actualizar título `{title}` |
+| DELETE | `/api/chat/conversations/:id` | usuario | Eliminar conversación y mensajes |
+| GET | `/api/chat/history` | usuario | Historial de mensajes (retrocompatible) |
+| POST | `/api/chat/stream` | usuario | `{question, conversationId?}` → SSE |
+| GET | `/api/usage` | usuario | Cuotas, tokens, modelos, desglose por usuario y actividad diaria |
+| GET | `/api/usage/history` | usuario | Reporte histórico mensual `?months=6` |
 
-## Ejemplo SSE
+## Flujo de Eventos SSE (`POST /api/chat/stream`)
 
 ```text
+data: {"type":"conversation","conversationId":"b478d120-..."}
+
 data: {"type":"sources","sources":[{"id":1,"name":"politica.txt","documentId":"..."}]}
 
-data: {"type":"delta","text":"Según la política... [1]"}
+data: {"type":"delta","text":"Según la política oficial de la empresa... [1]"}
 
-data: {"type":"done","messageId":"...","inputTokens":120,"outputTokens":40}
+data: {"type":"done","messageId":"...","conversationId":"...","inputTokens":120,"outputTokens":40,"totalTokens":160,"model":"openai/gpt-oss-120b","durationMs":420}
 ```
 
-- 401 cuando no hay sesión.
-- 403 si rol insuficiente.
-- 409 si carpeta ya sincronizando o correo repetido (409 para duplicados).
-- 413 al superar tamaño de documento.
-- 429 por límite de plan.
-- 503 si faltan claves necesarias (por ejemplo Groq o Drive).
-- Los errores que ocurren después de abrir SSE llegan como `{type:"error",error:"...",status:...}`. Antes del stream llegan como respuesta JSON con código HTTP.
+- **401** cuando no hay sesión activa.
+- **403** si el rol es insuficiente.
+- **404** si el documento o conversación no pertenece al usuario/empresa autenticada.
+- **409** si la carpeta ya está sincronizándose o hay duplicados de correo.
+- **413** al superar el tamaño permitido de documento.
+- **429** por límite de plan alcanzado.
+- **503** si faltan claves necesarias (por ejemplo Groq o credenciales de Drive).
+- Los errores posteriores a la apertura del stream SSE se transmiten como:
+  `{type:"error", error:"...", status:...}`.
 
-El `companyId` no se acepta en el body ni parámetros de rutas; deriva exclusivamente del usuario autenticado.
+El `companyId` no se acepta en el body ni en los parámetros de ruta; deriva exclusivamente del usuario autenticado en la sesión.

@@ -17,7 +17,7 @@ export const env = {
   googleClientId:process.env.GOOGLE_CLIENT_ID||'',
   googleCredentials:process.env.GOOGLE_APPLICATION_CREDENTIALS||'./credentials/service-account.json',
   syncCron:process.env.SYNC_CRON||'0 * * * *',
-  uploadLimit:Math.max(1,Math.min(25,Number(process.env.MAX_UPLOAD_MB||10)))*1024*1024
+  uploadLimit:Math.max(1,Number(process.env.MAX_UPLOAD_MB||1024))*1024*1024
 };
 export function assertConfig(){
   if(env.jwtSecret.length<32 || env.jwtSecret.startsWith('REEMPLAZA')) throw new Error('Configura JWT_SECRET aleatorio (mínimo 32 caracteres) en backend/.env');

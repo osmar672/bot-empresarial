@@ -14,15 +14,37 @@ export const DRIVE_MIMES=new Map([
 ]);
 export const DOWNLOADABLE=new Set(['application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document','text/plain','text/markdown','text/csv']);
 const active=new Set();
+function credentialsResult(){
+ const file=path.resolve(env.backendDir,env.googleCredentials);
+ if(!fs.existsSync(file))return {status:'missing',message:'Falta el archivo JSON de cuenta de servicio. Configura GOOGLE_APPLICATION_CREDENTIALS con su ruta en el servidor.'};
+ let credentials;try{credentials=JSON.parse(fs.readFileSync(file,'utf8'));}catch{return {status:'invalid',message:'El archivo de credenciales no contiene JSON válido.'};}
+ if(!credentials||typeof credentials!=='object'||!Object.keys(credentials).length)return {status:'empty',message:'El archivo de credenciales está vacío. Descarga una clave JSON de cuenta de servicio desde Google Cloud y configúrala en el servidor.'};
+ if(credentials.installed||credentials.web)return {status:'wrong_type',message:'Este JSON es de OAuth. Esta integración necesita una clave de cuenta de servicio, no un cliente OAuth.'};
+ if(credentials.type!=='service_account'||!credentials.private_key||!credentials.client_email)return {status:'invalid',message:'El JSON no incluye una cuenta de servicio completa (type, client_email y private_key).'};
+ return {status:'configured',message:'Credenciales locales presentes. Falta comprobar acceso a la carpeta.',credentials};
+}
+export function driveConfiguration(){const {credentials,...result}=credentialsResult();return {...result,serviceAccountEmail:credentials?.client_email||null};}
 export function driveClient(){
-  const file=path.resolve(env.backendDir,env.googleCredentials);
-  if(!fs.existsSync(file))throw new HttpError(503,'No existe el JSON de Google Drive. GOOGLE_APPLICATION_CREDENTIALS debe contener la RUTA a backend/credentials/service-account.json, no el ID numérico de la cuenta ni una API key.');
-  let credentials;
-  try{credentials=JSON.parse(fs.readFileSync(file,'utf8'));}
-  catch{throw new HttpError(503,'El archivo GOOGLE_APPLICATION_CREDENTIALS no es un JSON válido');}
-  if(credentials.type!=='service_account'||!credentials.private_key||!credentials.client_email)throw new HttpError(503,'Las credenciales de Drive deben ser un JSON completo de cuenta de servicio (con client_email y private_key)');
-  const auth=new google.auth.GoogleAuth({credentials,scopes:['https://www.googleapis.com/auth/drive.readonly']});
-  return google.drive({version:'v3',auth});
+ const result=credentialsResult();if(!result.credentials)throw new HttpError(503,result.message);
+ const auth=new google.auth.GoogleAuth({credentials:result.credentials,scopes:['https://www.googleapis.com/auth/drive.readonly']});
+ return google.drive({version:'v3',auth});
+}
+export function driveError(error){
+ if(error instanceof HttpError)return error;
+ const status=Number(error.response?.status||error.code);
+ const reason=error.response?.data?.error?.errors?.[0]?.reason;
+ if(reason==='accessNotConfigured'||reason==='serviceDisabled')return new HttpError(503,'Habilita Google Drive API en el proyecto de Google Cloud de la cuenta de servicio.');
+ if(status===401||error.response?.data?.error==='invalid_grant')return new HttpError(503,'Google rechazó las credenciales. Comprueba que la clave de la cuenta de servicio esté vigente y que el reloj del servidor sea correcto.');
+ if(status===404)return new HttpError(404,'Carpeta no encontrada o sin acceso. Comparte la carpeta con el correo de la cuenta de servicio como Lector y verifica el enlace.');
+ if(status===429||reason==='rateLimitExceeded'||reason==='userRateLimitExceeded')return new HttpError(429,'Google limitó las solicitudes. Espera un momento antes de sincronizar de nuevo.');
+ if(status===403)return new HttpError(403,'Google denegó el acceso. Revisa el permiso de Lector de la cuenta de servicio y las restricciones de Google Workspace.');
+ return new HttpError(502,'No se pudo conectar con Google. Revisa la salida HTTPS del servidor a www.googleapis.com y oauth2.googleapis.com y vuelve a intentar.');
+}
+export async function diagnoseDrive(companyId){
+ const configuration=driveConfiguration();if(configuration.status!=='configured')return {...configuration,connected:false};
+ const {folderId}=await folderDetails(companyId);if(!folderId)return {...configuration,connected:false,message:'Credenciales presentes. Guarda una carpeta para comprobar el acceso con Google.'};
+ try{const folder=await validateFolder(folderId);return {...configuration,connected:true,folderName:folder.name,message:'Conexión con Google y acceso de lectura a la carpeta comprobados.'};}
+ catch(error){const mapped=driveError(error);return {...configuration,connected:false,status:'connection_error',message:mapped.message};}
 }
 export function validFolder(id){return /^[A-Za-z0-9_-]{10,120}$/.test(id);}
 export async function validateFolder(folderId,api=driveClient()){
@@ -32,7 +54,7 @@ export async function validateFolder(folderId,api=driveClient()){
     const {data}=await api.files.get({fileId:folderId,fields:'id,name,mimeType',supportsAllDrives:true});
     if(data.mimeType!=='application/vnd.google-apps.folder')throw new HttpError(400,'El ID no corresponde a una carpeta');
     return data;
-  }catch(error){if(error instanceof HttpError)throw error;throw new HttpError(400,'No se puede acceder a la carpeta. Compártela con la cuenta de servicio');}
+  }catch(error){throw driveError(error);}
 }
 export async function listAllFiles(folderId,api=driveClient()){
   if(!validFolder(folderId))throw new HttpError(400,'ID de carpeta inválido');
@@ -41,7 +63,7 @@ export async function listAllFiles(folderId,api=driveClient()){
   do{
     const {data}=await api.files.list({q:`'${folderId}' in parents and trashed = false`,fields:'nextPageToken,files(id,name,mimeType,modifiedTime,webViewLink,size)',pageSize:1000,pageToken,includeItemsFromAllDrives:true,supportsAllDrives:true});
     items.push(...(data.files||[]));pageToken=data.nextPageToken;
-    if(items.length>2000)throw new HttpError(413,'La carpeta supera el límite de 2000 archivos del MVP');
+
   }while(pageToken);
   return items;
 }
@@ -67,7 +89,7 @@ export async function configureFolder(companyId,folderId){
 export async function folderDetails(companyId){
   const c=await one('SELECT drive_folder_id FROM pb_companies WHERE id=?',[companyId]);
   const last=await one('SELECT state,scanned,indexed,message,started_at,finished_at FROM pb_sync_runs WHERE company_id=? ORDER BY started_at DESC LIMIT 1',[companyId]);
-  return {folderId:c?.drive_folder_id||'',last};
+  return {folderId:c?.drive_folder_id||'',last,configuration:driveConfiguration()};
 }
 export async function syncDrive(companyId,{client=null}={}){
   if(active.has(companyId))throw new HttpError(409,'Ya hay una sincronización en curso');
@@ -95,7 +117,7 @@ export async function syncDrive(companyId,{client=null}={}){
         await indexDocument(companyId,doc.id,text);
         await run('UPDATE pb_documents SET drive_modified_at=? WHERE id=? AND company_id=?',[remoteTime,doc.id,companyId]);
         indexed++;
-      }catch(e){errors.push(`${file.name}: ${e.message}`);}
+      }catch(e){errors.push(`${file.name}: ${driveError(e).message}`);}
     }
     // Eliminar del índice documentos previamente sincronizados que ya no están en la carpeta.
     const ids=new Set(supported.map(f=>f.id));

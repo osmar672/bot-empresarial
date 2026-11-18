@@ -1,15 +1,32 @@
-export class ApiError extends Error{constructor(message,status){super(message);this.status=status;}}
-export async function api(path,{method='GET',body,signal}={}){
-  const options={method,credentials:'same-origin',signal,headers:{}};
-  if(body instanceof FormData)options.body=body;
-  else if(body!==undefined){options.headers['Content-Type']='application/json';options.body=JSON.stringify(body);}
-  const res=await fetch('/api'+path,options);
-  let data={};try{data=await res.json();}catch{}
-  if(!res.ok)throw new ApiError(data.error||`Error ${res.status}`,res.status);
+import {statusInfo} from './httpStatus.js';
+export const HTTP_STATUS=Symbol('HTTP_STATUS');
+export class ApiError extends Error {
+  constructor(message, status, details) {
+    super(message);
+    this.status = status;
+    this.details = details;
+  }
+}
+
+export async function api(path, { method = 'GET', body, signal } = {}) {
+  const options = { method, credentials: 'same-origin', signal, headers: {} };
+  if (body instanceof FormData) {
+    options.body = body;
+  } else if (body !== undefined) {
+    options.headers['Content-Type'] = 'application/json';
+    options.body = JSON.stringify(body);
+  }
+  const res = await request('/api' + path, options);
+  let data = {};
+  try {
+    data = await res.json();
+  } catch {}
+  if (!res.ok) throw new ApiError(data.error || statusInfo(res.status).title, res.status, data.details);
+  if(data&&typeof data==='object')Object.defineProperty(data,HTTP_STATUS,{value:res.status});
   return data;
 }
 export async function chatStream(question,{onEvent,signal,conversationId}={}){
-  const res=await fetch('/api/chat/stream',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,...(conversationId?{conversationId}:{})}),signal});
+  const res=await request('/api/chat/stream',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,...(conversationId?{conversationId}:{})}),signal});
   if(!res.ok){let message=`Error ${res.status}`;try{message=(await res.json()).error||message;}catch{}throw new ApiError(message,res.status);}
   if(!res.body)throw new Error('Streaming no disponible');
   const reader=res.body.getReader(),decoder=new TextDecoder();let buffer='';
@@ -23,5 +40,11 @@ export async function chatStream(question,{onEvent,signal,conversationId}={}){
         onEvent?.(event);
       }}
     }
-  }finally{reader.releaseLock();}
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+async function request(url,options){
+ try{return await fetch(url,options);}catch(error){if(error.name==='AbortError')throw error;throw new ApiError('No se pudo conectar con el servidor.',0);}
 }
