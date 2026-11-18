@@ -107,7 +107,7 @@ La lectura elimina marcas de Markdown, enlaces y números de citas y divide resp
 
 Aplicar `npm run db:migrate` antes de iniciar la versión con marcaciones. La migración 005_attendance.sql añade pb_attendance sin modificar jornadas anteriores ni tablas ajenas.
 
-Al iniciar sesión se ofrece un recordatorio opcional. El botón Marcar ficha permanece en la barra superior; Mi perfil muestra el estado y las últimas 30 jornadas con entrada, salida y duración de jornadas cerradas. Cada usuario consulta y marca únicamente su propia jornada, dentro de su empresa.
+Al iniciar sesión se ofrece un recordatorio opcional. El botón Marcar ficha permanece en la barra superior; Mi perfil muestra el estado y un historial paginado con filtros por fecha y día, con entrada, salida y duración de jornadas cerradas. Cada usuario consulta y marca únicamente su propia jornada, dentro de su empresa.
 
 Entrada y salida se guardan con UTC_TIMESTAMP del servidor MySQL; la interfaz muestra America/Costa_Rica. No se aceptan horas ni identidades suministradas por el cliente. Un bloqueo transaccional y una restricción única impiden dos jornadas abiertas incluso con solicitudes concurrentes.
 
@@ -116,3 +116,39 @@ Cerrar sesión ofrece Marcar salida y salir, Salir sin marcar o Volver cuando ha
 Las marcaciones no alteran automáticamente vacaciones, horarios ni saldos laborales. No se ha añadido edición retroactiva o gestión de marcaciones de otras personas.
 
 Validación adicional: `npm run test:attendance` prueba contra la base local migrada: autenticación, hora del servidor, rechazo de suplantación, concurrencia, privacidad entre empleados/empresas y cierre de sesión sin salida automática. Crea y elimina sus empresas de prueba.
+
+## Historial por fecha y vacaciones
+
+Actualizar con `git pull origin main`, ejecutar `npm run db:migrate` con MySQL activo y reiniciar API y frontend mediante `npm run dev`. La migración 006 añade solicitudes de vacaciones y una cola de correos. No modifica las marcaciones existentes.
+
+Si la sección de marcación responde HTTP 404 «Ruta no encontrada», el servidor de API que responde no incorpora la ruta de la versión actual. La interfaz muestra instrucciones para actualizar y reiniciar y ofrece Reintentar conexión. El endpoint /api/health informa las capacidades attendance, attendanceHistory y vacationRequests; esas capacidades no sustituyen aplicar las migraciones. Un 404 no se resuelve borrando tablas.
+
+Mi perfil → Entradas y salidas permite seleccionar desde/hasta y un día de la semana. La búsqueda usa la fecha y el día en Costa Rica, incluidas entradas cerca de medianoche, y pagina de 20 en 20 sin limitarse a las últimas 30 jornadas. Solo muestra marcaciones del usuario autenticado.
+
+Mi perfil → Solicitar vacaciones pide fecha inicial, fecha final y motivo (10–2.000 caracteres). No admite fechas pasadas, periodos invertidos o solapamientos con solicitudes propias pendientes/aprobadas. La persona puede cancelar una solicitud pendiente. El perfil muestra las últimas 50 solicitudes, su estado y la respuesta de RH.
+
+Solicitudes RH está disponible para Administrador, rrhh y los cargos rrhh_* de la misma empresa. Muestra las últimas 100 solicitudes, priorizando las pendientes, y permite aprobar/rechazar una sola vez con comentario. Nadie puede revisar su propia solicitud; requiere otro revisor autorizado. La decisión queda guardada con autor y fecha. No descuenta automáticamente un saldo de vacaciones: la cantidad de días laborales y feriados requiere una política específica de la empresa.
+
+## Correo de bienvenida a Gmail u otro destinatario
+
+El correo se dirige al email de la cuenta registrada, también cuando Administración crea un colaborador. No incluye contraseñas ni acredita verificación de propiedad del correo.
+
+Se usa la API HTTPS de Resend. Para envío real:
+
+1. Crear una cuenta de Resend y verificar un dominio remitente. Para pruebas, respetar las restricciones de destinatarios del proveedor.
+2. Configurar RESEND_API_KEY de forma privada en backend/.env o como secreto del entorno; nunca compartirlo por chat ni versionarlo.
+3. Configurar MAIL_FROM con un remitente permitido, por ejemplo `Luma <bienvenida@tu-dominio-verificado.com>`. Gmail es el destinatario; no hace falta la contraseña de Gmail del destinatario.
+4. Permitir acceso HTTPS a api.resend.com. El requisito de secreto y ese dominio se guardaron en el borrador del entorno cloud: revisar, guardar y publicar para activarlos. Esto no configura por sí mismo el equipo Windows.
+5. Reiniciar el backend. Las cuentas nuevas encolan el correo en la misma transacción de creación. Un worker revisa pendientes cada minuto, con reintentos limitados y clave de idempotencia estable para evitar duplicados durante reintentos del proveedor. Se conservan los fallidos para diagnóstico.
+
+Si falta configuración, la cuenta se crea y se indica «correo pendiente». Solo se informa aceptación del servicio si la API confirma un identificador de correo; eso no garantiza llegada a la bandeja principal. Revisar Spam. Los fallos del proveedor no exponen su respuesta cruda ni claves. Los correos se generan y almacenan en pb_mail_outbox, con acceso mediante el backend, no rutas públicas.
+
+No se realizó un envío real en este entorno porque no hay credenciales ni remitente configurados. Se validaron cola, destinatario, ausencia de contraseñas, entrega simulada, idempotencia y reintentos. `npm run test:workforce` debe ejecutarse sin RESEND_API_KEY para evitar envíos externos; crea y elimina empresas de prueba.
+
+### Creación automática de la tabla de correos
+
+Antes de aceptar conexiones, el backend comprueba si existe pb_mail_outbox en la base indicada por MYSQL_DATABASE. Si falta, la crea usando la definición canónica de 006_vacations_mail.sql. No usa un nombre de base fijo ni borra o altera una tabla existente. El usuario de MySQL necesita permiso CREATE y las tablas base pb_users/pb_companies ya deben existir.
+
+Esto resuelve la ausencia de la cola de correo al registrar cuentas; no sustituye las migraciones de vacaciones, marcaciones o el resto del esquema. Las migraciones se pueden ejecutar después sin perder los correos encolados. Si no es posible crear la tabla, el arranque informa el requisito y no inicia una API incompleta.
+
+Prueba de regresión: scripts/mail-bootstrap.integration.mjs, solo contra una base vacía desechable luma_migration_test_*. Verifica creación, inserción de bienvenida, segundo arranque sin pérdida de datos y compatibilidad con la migración posterior.

@@ -1,6 +1,7 @@
-import {useState} from 'react';
+import {useRef,useState} from 'react';
 import {ArrowRight,BookOpen,LockKeyhole,ShieldCheck,Sparkles} from 'lucide-react';
 import {useAuth} from '../context/AuthContext.jsx';
+import GoogleSignIn from '../components/GoogleSignIn.jsx';
 import {Notice} from '../components/UI.jsx';
 export default function Login(){
   const {login,register}=useAuth(),[mode,setMode]=useState('login'),[busy,setBusy]=useState(false),[error,setError]=useState('');
@@ -10,7 +11,7 @@ export default function Login(){
    <div className="auth-main"><div className="auth-form-wrap"><div className="mobile-auth-brand"><div className="brand-mark">L<span>•</span></div><strong>Luma</strong></div><div className="form-eyebrow">{signup?'CREAR ESPACIO':'BIENVENIDO DE NUEVO'}</div><h2>{signup?'Crea tu organización':'Inicia sesión'}</h2><p className="auth-helper">{signup?'Tu empresa tendrá un espacio privado para documentos y consultas.':'Accede al asistente de tu organización.'}</p><form onSubmit={submit} className="auth-form">
    {signup&&<><label>Nombre de la empresa<input required name="companyName" placeholder="Ej. Café Montaña S.A." minLength="3" maxLength="150"/></label><label>Tu nombre<input required name="name" placeholder="Nombre completo" minLength="2"/></label></>}
    <label>Correo electrónico<input required autoComplete="email" type="email" name="email" placeholder="tu@empresa.com"/></label>
-   <label>Contraseña<input required autoComplete={signup?'new-password':'current-password'} type="password" name="password" minLength={signup?10:1} placeholder={signup?'Mínimo 10 caracteres':'••••••••••'}/></label>
+   <label>Contraseña<input ref={passwordInput} required autoComplete={signup?'new-password':'current-password'} type="password" name="password" minLength={signup?10:1} placeholder={signup?'Mínimo 10 caracteres':'••••••••••'}/></label>
    <Notice error={error}/><button className="btn btn-primary auth-submit" disabled={busy} type="submit">{busy?'Procesando…':signup?'Crear organización':'Entrar al espacio'}<ArrowRight size={18}/></button>
-   </form><p className="switch-mode">{signup?'¿Ya tienes una cuenta?':'¿Tu empresa aún no está registrada?'} <button className="text-button" onClick={()=>{setMode(signup?'login':'register');setError('');}}>{signup?'Iniciar sesión':'Crear cuenta'}</button></p><div className="auth-security"><LockKeyhole size={15}/> Conexión protegida. Tus documentos no se comparten con otras empresas.</div></div></div></div>;
+   </form>{!signup&&<GoogleSignIn onCredential={googleLogin} disabled={busy}/>}<p className="switch-mode">{signup?'¿Ya tienes una cuenta?':'¿Tu empresa aún no está registrada?'} <button className="text-button" onClick={()=>{setMode(signup?'login':'register');setError('');}}>{signup?'Iniciar sesión':'Crear cuenta'}</button></p><div className="auth-security"><LockKeyhole size={15}/> Conexión protegida. Tus documentos no se comparten con otras empresas.</div></div></div></div>;
 }

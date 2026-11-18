@@ -1,3 +1,4 @@
+import {queueWelcome,dispatchWelcome} from '../services/mail.service.js';
 import {Router} from 'express';
 import bcrypt from 'bcryptjs';
 import {randomUUID} from 'node:crypto';
@@ -13,12 +14,15 @@ router.post('/register',limiter,asyncHandler(async(req,res)=>{
   const data=signupSchema.parse(req.body);
   const hash=await bcrypt.hash(data.password,12);
   const companyId=randomUUID(),userId=randomUUID();
+  let mailId;
   await transaction(async cx=>{
     await cx.execute(`INSERT INTO pb_companies(id,name,plan_id) VALUES (?,?,'gratis')`,[companyId,data.companyName]);
     await cx.execute(`INSERT INTO pb_users(id,company_id,email,name,password_hash,role) VALUES (?,?,?,?,?,'admin')`,[userId,companyId,data.email,data.name,hash]);
+    mailId=await queueWelcome(cx,{id:userId,companyId,email:data.email,name:data.name});
   });
+  const welcomeEmail=await dispatchWelcome(mailId);
   setSession(res,{id:userId});
-  res.status(201).json({user:{id:userId,name:data.name,email:data.email,role:'admin'},company:{id:companyId,name:data.companyName,plan:'gratis'}});
+  res.status(201).json({welcomeEmail,user:{id:userId,name:data.name,email:data.email,role:'admin'},company:{id:companyId,name:data.companyName,plan:'gratis'}});
 }));
 router.post('/login',limiter,asyncHandler(async(req,res)=>{
   const {email,password}=loginSchema.parse(req.body);
