@@ -67,8 +67,41 @@ router.get('/',asyncHandler(async(req,res)=>{
 }));
 
 router.post('/',asyncHandler(async(req,res)=>{
-  const data=userSchema.parse(req.body),hash=await bcrypt.hash(data.password,12),id=randomUUID();
-  let mailId;await transaction(async cx=>{await cx.execute('INSERT INTO pb_users(id,company_id,name,email,password_hash,role) VALUES (?,?,?,?,?,?)',[id,req.companyId,data.name,data.email,hash,data.role]);mailId=await queueWelcome(cx,{id,companyId:req.companyId,email:data.email,name:data.name});});
+  const data=userSchema.parse(req.body);
+  const hash=await bcrypt.hash(data.password,12);
+  const id=randomUUID();
+  let mailId;
+
+  await transaction(async cx=>{
+    // Concurrencia segura: bloqueo de fila a nivel de empresa
+    await cx.execute('SELECT id FROM pb_companies WHERE id=? FOR UPDATE',[req.companyId]);
+
+    // Control de límite de colaboradores (los roles distintos de admin cuentan hacia la capacidad)
+    if(data.role!=='admin'){
+      const [colabRows]=await cx.execute(
+        'SELECT COUNT(*) AS total FROM pb_users WHERE company_id=? AND role != "admin"',
+        [req.companyId]
+      );
+      const currentColabs=Number(colabRows[0]?.total||0);
+      if(currentColabs>=MAX_COLLABORATORS){
+        throw new HttpError(403,`Se ha alcanzado la capacidad máxima de colaboradores (${MAX_COLLABORATORS}) para esta empresa.`);
+      }
+    }
+
+    // Comprobar unicidad de correo electrónico
+    const [existing]=await cx.execute('SELECT id FROM pb_users WHERE email=?',[data.email]);
+    if(existing.length){
+      throw new HttpError(409,'El correo electrónico ya se encuentra registrado');
+    }
+
+    await cx.execute(
+      'INSERT INTO pb_users(id,company_id,name,email,password_hash,role) VALUES (?,?,?,?,?,?)',
+      [id,req.companyId,data.name,data.email,hash,data.role]
+    );
+
+    mailId=await queueWelcome(cx,{id,companyId:req.companyId,email:data.email,name:data.name});
+  });
+
   const welcomeEmail=await dispatchWelcome(mailId);
   res.status(201).json({welcomeEmail,user:{id,name:data.name,email:data.email,role:data.role}});
 }));
