@@ -18,3 +18,20 @@ h1,h2,h3{font-family:inherit;color:var(--ink);letter-spacing:-.035em}h1{font-siz
 @media(max-width:800px){.sidebar{width:250px}.main-area{margin-left:0}.page{padding:25px 20px}.page-chat{padding:0}.topbar{padding:0 18px}.profile-company{display:none}.user-row .field{width:100%}.member-info{min-width:180px}.profile-details dl{grid-template-columns:1fr}.chat-header h1{font-size:18px}.chat-header{padding:12px 20px}.chat-header p{font-size:11px}.profile-hero{padding:22px}.compose-hint span{display:none}}
 @media(max-width:560px){.profile-metrics{grid-template-columns:1fr}.profile-hero{gap:14px}.profile-hero h2{font-size:20px}.profile-hero p{font-size:12px;overflow-wrap:anywhere}.profile-initial{width:54px;height:54px;flex-shrink:0;font-size:24px;border-radius:16px}.messages{padding:24px 16px}.message-content{font-size:14px}.chat-welcome{padding:28px 18px}.chat-welcome h2{font-size:26px}.chat-welcome>p{font-size:13px}.chat-compose{padding:12px 14px}.page-chat{min-height:0}.prompt-examples button{max-width:none}.access-dialog{padding:20px}.profile-metric{min-height:160px}.access-toolbar{font-size:10px}.profile-details{padding:22px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* Each panel can be hidden independently without removing its restore control. */
+.desktop-sidebar-toggle{display:inline-grid;color:#776385;margin-right:14px}
+.topbar .breadcrumbs{margin-right:auto}
+.thread-toggle{flex-shrink:0;color:#776385}
+.chat-header{justify-content:flex-start;gap:12px}
+.chat-header .subtle-chip{margin-left:auto}
+.thread-panel[hidden]{display:none}
+.page-chat.threads-hidden{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+@media(min-width:801px){
+ .sidebar-hidden .sidebar{display:none}
+ .sidebar-hidden .main-area{margin-left:0}
+}
+@media(max-width:800px){
+ .desktop-sidebar-toggle{display:none}
+ .topbar .breadcrumbs{min-width:0;overflow:hidden;white-space:nowrap}
+}
