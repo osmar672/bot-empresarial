@@ -10,6 +10,7 @@
     "dev": "concurrently -n API,WEB -c cyan,green \"npm run dev -w backend\" \"npm run dev -w frontend\"",
     "build": "npm run build -w frontend",
     "start": "npm run start -w backend",
+    "db:photos": "node backend/src/db/setupProfilePhotos.js",
     "db:migrate": "npm run migrate -w backend",
     "db:doctor": "npm run doctor -w backend",
     "db:status": "npm run migrate -w backend -- --status",
@@ -21,6 +22,7 @@
     "test:integration": "node --test scripts/access.integration.mjs",
     "test:files": "node scripts/profile-files.integration.mjs",
     "test:attendance": "node scripts/attendance.integration.mjs",
+    "test:profile-photo": "node scripts/profile-photo.integration.mjs",
     "test:workforce": "node scripts/workforce.integration.mjs",
     "db:seed:team": "node backend/src/db/seedTeam.js"
   },

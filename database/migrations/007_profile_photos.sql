@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS pb_user_photos (
+ user_id CHAR(36) PRIMARY KEY,
+ company_id CHAR(36) NOT NULL,
+ version CHAR(36) NOT NULL,
+ image MEDIUMBLOB NOT NULL,
+ updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+ FOREIGN KEY (user_id,company_id) REFERENCES pb_users(id,company_id) ON DELETE CASCADE,
+ FOREIGN KEY (company_id) REFERENCES pb_companies(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
