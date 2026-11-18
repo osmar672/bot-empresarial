@@ -3,6 +3,7 @@ import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {createRequire} from 'node:module';
 import {spawnSync} from 'node:child_process';
+import {installDependencies} from './install-dependencies.mjs';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const scope=process.argv.includes('--frontend')?'frontend':process.argv.includes('--backend')?'backend':'all';
@@ -46,8 +47,8 @@ else{
  const npmCli=process.env.npm_execpath;
  if(!npmCli||!fs.existsSync(npmCli)){console.error('Desde '+root+' ejecuta: npm ci --include=dev --bin-links=true');process.exit(1);}
  console.log('Reparando dependencias desde la carpeta principal con npm ci…');
- const installed=spawnSync(process.execPath,[npmCli,'ci','--include=dev','--bin-links=true','--workspaces','--include-workspace-root'],{cwd:root,stdio:'inherit',env:process.env});
- if(installed.error||installed.status!==0){console.error('No se completó la instalación. Revisa el error de npm anterior; la aplicación no se iniciará.');process.exit(installed.status||1);}
+ const installed=await installDependencies(npmCli);
+ if(installed!==0)process.exit(installed);
  // Verify in a fresh process: Node can cache earlier resolution/native-load failures.
  const verified=spawnSync(process.execPath,[fileURLToPath(import.meta.url),'--check',...(scope==='all'?[]:['--'+scope])],{cwd:root,stdio:'inherit',env:process.env});
  process.exit(verified.status|| (verified.error?1:0));

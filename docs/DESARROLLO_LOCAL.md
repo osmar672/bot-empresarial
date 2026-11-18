@@ -55,3 +55,15 @@ npm run db:migrate -- --dry-run
 ```
 
 Ambas opciones consultan o simulan sin aplicar cambios.
+
+## Windows: EPERM al borrar libvips-42.dll
+
+Sharp carga una DLL que Windows puede mantener bloqueada mientras el backend esté abierto. Ejecutar `npm ci` o `setup` en otra terminal no detiene ese servidor.
+
+1. Detén el backend y el frontend con **Ctrl + C** en cada terminal donde estén abiertos. Detén también las sesiones de depuración de Node del proyecto.
+2. Ejecuta `npm run setup`. Si vuelve a fallar con la misma DLL, reinicia Windows y ejecuta el comando antes de volver a abrir los servidores.
+3. Continúa con `npm run db:migrate` y `npm run dev` únicamente cuando la instalación termine sin errores.
+
+Si el problema continúa después del reinicio, revisa permisos y los avisos de protección del sistema. No borres el lockfile ni desactives el antivirus. El instalador mantiene el error original y devuelve un código de fallo; no finaliza otros procesos automáticamente.
+
+`setup`, `db:migrate`, `db:status` y `db:photos` también se pueden ejecutar desde `frontend`.

@@ -25,7 +25,7 @@
     "test:profile-photo": "node scripts/profile-photo.integration.mjs",
     "test:workforce": "node scripts/workforce.integration.mjs",
     "db:seed:team": "node backend/src/db/seedTeam.js",
-    "setup": "npm ci --include=dev --bin-links=true --workspaces --include-workspace-root && node scripts/ensure-dependencies.mjs --check",
+    "setup": "node scripts/install-dependencies.mjs && node scripts/ensure-dependencies.mjs --check",
     "check:install": "node scripts/ensure-dependencies.mjs --check",
     "predev": "node scripts/ensure-dependencies.mjs",
     "prestart": "node scripts/ensure-dependencies.mjs --backend",

@@ -10,7 +10,10 @@
     "predev": "node ../scripts/ensure-dependencies.mjs --frontend",
     "prebuild": "node ../scripts/ensure-dependencies.mjs --frontend",
     "prepreview": "node ../scripts/ensure-dependencies.mjs --frontend",
-    "setup": "npm --prefix .. run setup"
+    "setup": "npm --prefix .. run setup",
+    "db:migrate": "npm --prefix .. run db:migrate",
+    "db:status": "npm --prefix .. run db:status",
+    "db:photos": "npm --prefix .. run db:photos"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
