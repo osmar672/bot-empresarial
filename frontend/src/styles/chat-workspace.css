@@ -84,3 +84,5 @@
 }
 .ai-workspace .compose-box:focus-within{border-color:#ae95c5;box-shadow:0 0 0 3px #eee6f6}
 .ai-workspace .compose-box textarea:focus-visible{outline:none;box-shadow:none}
+
+.chat-toolbar-actions{display:flex;align-items:center;gap:6px;margin-left:auto;flex-shrink:0}

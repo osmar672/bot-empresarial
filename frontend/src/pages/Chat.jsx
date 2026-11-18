@@ -68,8 +68,8 @@ export default function Chat({onDocuments}){
   </dialog>
   <div className="chat-workspace">
    <header className="chat-header">
-    <div className="chat-toolbar-left"><button className="chat-toolbar-button" aria-label="Mostrar conversaciones" aria-expanded={!threadsHidden} aria-controls="conversation-navigation" onClick={toggleThreads}><List size={18}/><span>Historial</span></button><span className="toolbar-separator" aria-hidden="true"/><h1>Luma <span>Asistente</span></h1></div>
-    <button className="chat-toolbar-button" disabled={busy||loading} onClick={newConversation}><SquarePen size={17}/><span>Nuevo chat</span></button>
+    <div className="chat-toolbar-left"><h1>Luma <span>Asistente</span></h1></div>
+    <div className="chat-toolbar-actions"><button className="chat-toolbar-button" aria-label="Mostrar conversaciones" aria-expanded={!threadsHidden} aria-controls="conversation-navigation" onClick={toggleThreads}><List size={18}/><span>Historial</span></button><button className="chat-toolbar-button" disabled={busy||loading} onClick={newConversation}><SquarePen size={17}/><span>Nuevo chat</span></button></div>
    </header>
    <div className="chat-surface">
     <div className="chat-feed-wrap">
