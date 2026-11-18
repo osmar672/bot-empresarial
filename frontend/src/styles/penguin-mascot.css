@@ -58,3 +58,14 @@
 @keyframes penguin-hello-shadow{0%,100%{transform:scaleX(1);opacity:.8}25%,52%{transform:scaleX(.65);opacity:.3}78%{transform:scaleX(1.1);opacity:.8}}
 @keyframes penguin-hello-caption{0%{opacity:0;transform:translateY(5px) scale(.85)}15%,80%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-4px) scale(.95)}}
 @media(prefers-reduced-motion:reduce){.penguin-companion .penguin-stage .penguin-character,.penguin-companion .penguin-shadow,.penguin-companion .penguin-spark,.penguin-companion .penguin-hello-bubble{animation:none!important}.penguin-body{transform:none!important;transition:none!important}}
+
+/* Inactivity prompts are temporary hints, never messages sent to the AI. */
+.penguin-offering-help .penguin-body{animation:penguin-peek .7s ease-out 1}
+.penguin-offering-help .penguin-stage .penguin-character{animation:penguin-curious 2.4s ease-in-out 2!important}
+.penguin-offering-help .penguin-caption{position:relative;background:#f4eef9;border:1px solid #e7daef;border-radius:12px 12px 12px 3px;padding:9px 12px;animation:penguin-help-appear .3s ease-out 1}
+.penguin-offering-help .penguin-caption strong{color:#80608f}
+.penguin-offering-help .penguin-halo{background:#e8dcf3;opacity:.9}
+@keyframes penguin-peek{from{transform:translateX(-8px) rotate(-8deg);opacity:.4}to{transform:translateX(0) rotate(0);opacity:1}}
+@keyframes penguin-curious{0%,100%{transform:rotate(0) translateY(0)}25%{transform:rotate(-9deg) translateY(-3px)}55%{transform:rotate(7deg) translateY(-4px)}75%{transform:rotate(-3deg)}}
+@keyframes penguin-help-appear{from{opacity:0;transform:translateX(-5px)}to{opacity:1;transform:translateX(0)}}
+@media(prefers-reduced-motion:reduce){.penguin-offering-help .penguin-stage .penguin-character,.penguin-offering-help .penguin-body,.penguin-offering-help .penguin-caption{animation:none!important}}

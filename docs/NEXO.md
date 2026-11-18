@@ -84,3 +84,9 @@ Estados conectados al flujo del chat: espera, lectura del texto del usuario, car
 La mascota saluda al abrir una conversación nueva y reacciona al tocarla, enfocarla o pasar el cursor. En la bienvenida, hace un saludo ocasional mientras espera; no lo repite en pestañas ocultas ni mientras el usuario escribe. No tiene botón de pausa visible. prefers-reduced-motion desactiva los movimientos y el seguimiento del cursor, incluido el saludo, manteniendo los mensajes de estado. La mascota no reproduce audio ni accede al micrófono.
 
 Se verificaron los estados con respuestas HTTP y SSE simuladas en navegador, el saludo automático y al pasar el cursor, seguimiento del puntero, ausencia del botón de pausa, movimiento reducido y la visibilidad del cuadro de escritura en móvil; esas comprobaciones no acreditan llamadas reales al proveedor de IA.
+
+### Ayuda por inactividad
+
+Tras 20 segundos sin actividad y con el campo vacío, el pingüino muestra una invitación breve como «¿Necesitas ayuda con algo?». El aviso dura 8 segundos y no se repite hasta que haya nueva interacción. Es un mensaje local de interfaz: no envía preguntas a la IA ni crea mensajes en el historial.
+
+Escribir, pulsar o desplazarse reinicia la espera. No aparece mientras hay un borrador, una respuesta en curso, un error, el historial abierto ni la pestaña oculta. Al volver a la pestaña comienza una espera nueva. Las animaciones siguen respetando prefers-reduced-motion.

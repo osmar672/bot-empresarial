@@ -1,3 +1,4 @@
+import useIdlePrompt from '../hooks/useIdlePrompt.js';
 import PenguinMascot from '../components/PenguinMascot.jsx';
 import {useConfirm} from '../components/ConfirmProvider.jsx';
 import useStoredToggle from '../hooks/useStoredToggle.js';
@@ -35,6 +36,7 @@ export default function Chat({onDocuments}){
  const [threadsHidden,toggleThreads]=useStoredToggle('luma.historyDrawerHidden',true);
  const historyRequest=useRef(0),historyDialog=useRef(null);
  const [historyQuery,setHistoryQuery]=useState('');
+ const idlePrompt=useIdlePrompt(!busy&&!loading&&!error&&threadsHidden&&!question.trim()&&activity==='idle');
  useEffect(()=>{const dialog=historyDialog.current;if(!threadsHidden&&!dialog.open)dialog.showModal();else if(threadsHidden&&dialog.open)dialog.close();},[threadsHidden]);
  function newConversation(){if(busy||loading)return;followTail.current=true;setShowJump(false);setConversationId('');setMessages([]);setOlder(null);setError('');setSuccess(null);setActivity('idle');setQuestion('');if(!threadsHidden)toggleThreads();input.current?.focus();}
 
@@ -78,7 +80,7 @@ export default function Chat({onDocuments}){
     <div className="chat-feed-wrap">
      <div className="chat-feed" ref={feed} onScroll={e=>{const el=e.currentTarget;followTail.current=el.scrollHeight-el.scrollTop-el.clientHeight<80;setShowJump(messages.length>0&&!followTail.current);}} role="log" aria-label="Mensajes de la conversación">
       {older&&<button className="older-messages" disabled={busy||loading} onClick={()=>loadHistory(conversationId,older)}>Cargar mensajes anteriores</button>}
-      {loading?<Spinner/>:!messages.length?<div className="chat-welcome"><div className="welcome-intro"><PenguinMascot hero state={error?'error':question.trim()?'listening':'idle'}/><div className="welcome-intro-copy"><div className="welcome-caption">TU ASISTENTE DE TRABAJO</div><h2>Hola, {session.user.name.split(' ')[0]}.</h2><p>¿En qué te ayudo hoy?</p></div></div><p className="welcome-description">Consulta las políticas y los documentos de {session.company.name}.</p><div className="prompt-examples">{examples.map((text,i)=><button disabled={busy} onClick={()=>send(text)} key={text}><span className="prompt-number">0{i+1}</span><span>{text}</span><ArrowUpRight size={16}/></button>)}</div><button className="link-inline" onClick={onDocuments}><FileText size={14}/> Explorar la biblioteca</button></div>:
+      {loading?<Spinner/>:!messages.length?<div className="chat-welcome"><div className="welcome-intro">{!idlePrompt&&<PenguinMascot hero state={error?'error':question.trim()?'listening':'idle'}/>}<div className="welcome-intro-copy"><div className="welcome-caption">TU ASISTENTE DE TRABAJO</div><h2>Hola, {session.user.name.split(' ')[0]}.</h2><p>¿En qué te ayudo hoy?</p></div></div><p className="welcome-description">Consulta las políticas y los documentos de {session.company.name}.</p><div className="prompt-examples">{examples.map((text,i)=><button disabled={busy} onClick={()=>send(text)} key={text}><span className="prompt-number">0{i+1}</span><span>{text}</span><ArrowUpRight size={16}/></button>)}</div><button className="link-inline" onClick={onDocuments}><FileText size={14}/> Explorar la biblioteca</button></div>:
        <div className="messages">{messages.map(m=><article key={m.id} className={'message '+(m.role==='user'?'message-user':'message-bot')} aria-label={m.role==='user'?'Tu mensaje':'Respuesta de Luma'}><div className="message-main">
         <div className="message-content">{m.text?(m.role==='assistant'?<Markdown remarkPlugins={[remarkGfm]} components={{a:({href,children})=><a href={href} target="_blank" rel="noopener noreferrer">{children}</a>}}>{m.text}</Markdown>:m.text):<span className="typing" aria-label="Preparando respuesta"><i/><i/><i/></span>}</div>
         {m.role==='assistant'&&m.text&&<footer className="answer-tools">
@@ -89,7 +91,7 @@ export default function Chat({onDocuments}){
      </div>
      {showJump&&messages.length>0&&!loading&&<button className="jump-latest" onClick={jumpToLatest} aria-label="Ir al último mensaje"><ArrowDown size={16}/><span>Último mensaje</span></button>}
     </div>
-    <div className="chat-compose">{(messages.length>0||loading)&&<PenguinMascot state={busy?activity:question.trim()?'listening':error?'error':loading?'loading':activity}/>}<Notice error={error} success={success} onClose={()=>{setError('');setSuccess(null);}}/>
+    <div className="chat-compose">{(messages.length>0||loading||idlePrompt)&&<PenguinMascot idlePrompt={idlePrompt} state={busy?activity:question.trim()?'listening':error?'error':loading?'loading':activity}/>}<Notice error={error} success={success} onClose={()=>{setError('');setSuccess(null);}}/>
      <div className="compose-box"><textarea ref={input} rows="1" maxLength="2000" disabled={busy} value={question} onChange={e=>setQuestion(e.target.value)} onKeyDown={handleKey} placeholder="Escribe tu pregunta…" aria-label="Escribe tu pregunta"/>
       <div className="compose-controls"><span><FileText size={13}/> Documentos de tu empresa</span>{busy?<button className="send-button" type="button" aria-label="Detener respuesta" onClick={()=>controller.current?.abort()}>■</button>:<button className="send-button" type="button" aria-label="Enviar pregunta" disabled={!question.trim()} onClick={()=>send()}><ArrowUp size={19}/></button>}</div>
      </div>
