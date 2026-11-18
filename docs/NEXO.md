@@ -144,3 +144,11 @@ Se usa la API HTTPS de Resend. Para envío real:
 Si falta configuración, la cuenta se crea y se indica «correo pendiente». Solo se informa aceptación del servicio si la API confirma un identificador de correo; eso no garantiza llegada a la bandeja principal. Revisar Spam. Los fallos del proveedor no exponen su respuesta cruda ni claves. Los correos se generan y almacenan en pb_mail_outbox, con acceso mediante el backend, no rutas públicas.
 
 No se realizó un envío real en este entorno porque no hay credenciales ni remitente configurados. Se validaron cola, destinatario, ausencia de contraseñas, entrega simulada, idempotencia y reintentos. `npm run test:workforce` debe ejecutarse sin RESEND_API_KEY para evitar envíos externos; crea y elimina empresas de prueba.
+
+### Creación automática de la tabla de correos
+
+Antes de aceptar conexiones, el backend comprueba si existe pb_mail_outbox en la base indicada por MYSQL_DATABASE. Si falta, la crea usando la definición canónica de 006_vacations_mail.sql. No usa un nombre de base fijo ni borra o altera una tabla existente. El usuario de MySQL necesita permiso CREATE y las tablas base pb_users/pb_companies ya deben existir.
+
+Esto resuelve la ausencia de la cola de correo al registrar cuentas; no sustituye las migraciones de vacaciones, marcaciones o el resto del esquema. Las migraciones se pueden ejecutar después sin perder los correos encolados. Si no es posible crear la tabla, el arranque informa el requisito y no inicia una API incompleta.
+
+Prueba de regresión: scripts/mail-bootstrap.integration.mjs, solo contra una base vacía desechable luma_migration_test_*. Verifica creación, inserción de bienvenida, segundo arranque sin pérdida de datos y compatibilidad con la migración posterior.
