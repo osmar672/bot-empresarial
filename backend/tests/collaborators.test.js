@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import bcrypt from 'bcryptjs';
-import {pool,one,many} from '../src/db/pool.js';
+import jwt from 'jsonwebtoken';
+import {randomUUID} from 'node:crypto';
+import app from '../src/app.js';
+import {env} from '../src/config/env.js';
+import {pool,one,many,run} from '../src/db/pool.js';
 import {seedCollaborators} from '../src/db/seedCollaborators.js';
 
 test('1. Existen al menos 500 colaboradores almacenados realmente en MySQL para la empresa',async()=>{
@@ -137,6 +141,136 @@ test('15. Idempotencia: el proceso de carga no duplica registros si se ejecuta n
   assert.equal(Number(before.total),Number(after.total),'El conteo total debe ser idéntico antes y después');
 });
 
+let testServer;
+let testBase;
+async function getTestBase(){
+  if(!testServer){
+    testServer=app.listen(0,'127.0.0.1');
+    await new Promise(resolve=>testServer.once('listening',resolve));
+    testBase=`http://127.0.0.1:${testServer.address().port}/api`;
+  }
+  return testBase;
+}
+
+test('16. Control de límite de capacidad: impide registrar colaboradores por encima de 500 por empresa',async()=>{
+  const base=await getTestBase();
+  const company=await one("SELECT id, name FROM pb_companies WHERE name = 'Rockstar'") ||
+                await one("SELECT id, name FROM pb_companies ORDER BY created_at ASC LIMIT 1");
+  const admin=await one("SELECT id FROM pb_users WHERE company_id = ? AND role = 'admin'",[company.id]);
+  assert.ok(admin,'Debe existir administrador de Rockstar');
+
+  const token=jwt.sign({sub:admin.id},env.jwtSecret,{expiresIn:'1h',issuer:'policybot'});
+  const cookie=`policybot_session=${token}`;
+
+  // Intentar agregar colaborador número 501+
+  const res=await fetch(`${base}/users`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json',Cookie:cookie},
+    body:JSON.stringify({
+      name:'Exceso Colaborador',
+      email:`exceso_${randomUUID()}@rockstar.test`,
+      password:'Password10!x',
+      role:'colaborador'
+    })
+  });
+
+  assert.equal(res.status,403,'Debe rechazar con HTTP 403 al superar la capacidad máxima de 500');
+  const data=await res.json();
+  assert.match(data.error||data.message||'',/capacidad máxima/i);
+});
+
+test('17. Creación de nueva compañía: inicia con 0 colaboradores, lista vacía y aislamiento total',async()=>{
+  const base=await getTestBase();
+  const newEmail=`admin_${randomUUID()}@nuevasaas.test`;
+  const companyName=`Nueva SaaS ${randomUUID().slice(0,8)}`;
+
+  // 1. Registro de nueva compañía
+  const regRes=await fetch(`${base}/auth/register`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      email:newEmail,
+      name:'Admin Nueva',
+      companyName,
+      password:'Password10!x'
+    })
+  });
+  assert.equal(regRes.status,201,'La nueva compañía debe registrarse exitosamente');
+  const regData=await regRes.json();
+  const newCompanyId=regData.company.id;
+  const cookie=regRes.headers.get('set-cookie')?.split(';')[0];
+
+  try {
+    // 2. Comprobar que inicia con 0 colaboradores y listado sin colaboradores (solo el admin creador)
+    const listRes=await fetch(`${base}/users`,{
+      headers:{Cookie:cookie}
+    });
+    assert.equal(listRes.status,200);
+    const listData=await listRes.json();
+
+    const nonAdminUsers=listData.users.filter(u=>u.role!=='admin');
+    assert.equal(nonAdminUsers.length,0,'No debe tener colaboradores inicialmente (solo el admin creador)');
+    assert.equal(listData.company.collaborators,0,'El contador de colaboradores debe comenzar en 0');
+    assert.equal(listData.company.capacity,500);
+    assert.equal(listData.company.available,500);
+    assert.equal(listData.company.name,companyName);
+
+    // 3. Registrar su primer colaborador propio
+    const addColabRes=await fetch(`${base}/users`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json',Cookie:cookie},
+      body:JSON.stringify({
+        name:'Colaborador Uno',
+        email:`colab1_${randomUUID()}@nuevasaas.test`,
+        password:'Password10!x',
+        role:'colaborador'
+      })
+    });
+    assert.equal(addColabRes.status,201);
+
+    // 4. Comprobar que ahora tiene 1 colaborador y no ve los de otras empresas
+    const afterListRes=await fetch(`${base}/users`,{
+      headers:{Cookie:cookie}
+    });
+    const afterListData=await afterListRes.json();
+    assert.equal(afterListData.company.collaborators,1,'Debe tener exactamente 1 colaborador registrado');
+    assert.equal(afterListData.company.available,499,'Debe tener 499 cupos disponibles');
+    assert.equal(afterListData.total,2,'Total de usuarios de la empresa: 1 admin + 1 colaborador');
+    const colabs=afterListData.users.filter(u=>u.role!=='admin');
+    assert.equal(colabs.length,1,'Debe tener exactamente 1 colaborador');
+    assert.ok(afterListData.users.every(u=>u.email.includes('nuevasaas.test')),'Solo debe ver sus propios usuarios');
+  } finally {
+    // Limpieza de datos temporales del test
+    await run("DELETE FROM pb_companies WHERE id = ?",[newCompanyId]).catch(()=>{});
+  }
+});
+
+test('18. Intentar acceder o modificar colaboradores de otra empresa es rechazado con 404',async()=>{
+  const base=await getTestBase();
+  // Obtener usuario de Rockstar
+  const rockstarUser=await one("SELECT u.id FROM pb_users u JOIN pb_companies c ON u.company_id=c.id WHERE c.name='Rockstar' AND u.role != 'admin' LIMIT 1");
+  assert.ok(rockstarUser,'Debe existir usuario de Rockstar');
+
+  // Obtener admin de Logística Pacífico
+  const logisticaAdmin=await one("SELECT u.id FROM pb_users u JOIN pb_companies c ON u.company_id=c.id WHERE c.name='Logística Pacífico' AND u.role='admin'");
+  assert.ok(logisticaAdmin,'Debe existir admin de Logística Pacífico');
+
+  const token=jwt.sign({sub:logisticaAdmin.id},env.jwtSecret,{expiresIn:'1h',issuer:'policybot'});
+  const cookie=`policybot_session=${token}`;
+
+  // Intentar modificar el rol del usuario de Rockstar desde la sesión de Logística Pacífico
+  const patchRes=await fetch(`${base}/users/${rockstarUser.id}/role`,{
+    method:'PATCH',
+    headers:{'Content-Type':'application/json',Cookie:cookie},
+    body:JSON.stringify({role:'tecnologia_analista'})
+  });
+
+  assert.equal(patchRes.status,404,'Debe rechazar con HTTP 404 por no pertenecer a la empresa');
+});
+
 test.after(async()=>{
+  if(testServer){
+    await new Promise(resolve=>testServer.close(resolve));
+  }
   await pool.end();
 });

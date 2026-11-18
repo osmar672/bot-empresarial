@@ -23,6 +23,7 @@ export default function Users(){
  const [totalPages,setTotalPages]=useState(1);
  const [search,setSearch]=useState('');
  const [searchInput,setSearchInput]=useState('');
+ const [companyData,setCompanyData]=useState(null);
  const limit=25;
 
  // Debounce de búsqueda en servidor (300 ms)
@@ -57,6 +58,7 @@ export default function Users(){
    setPage(data.page||1);
    setTotal(data.total||0);
    setTotalPages(data.totalPages||1);
+   if(data?.company)setCompanyData(data.company);
    if(catalog?.roles)setRoles(catalog.roles);
   }catch(e){
    setError(e);
@@ -108,16 +110,27 @@ export default function Users(){
   setPage(1);
  }
 
+ const companyName=companyData?.name||session?.company?.name||session?.user?.company_name||'Organización';
+ const companyCollaborators=companyData?.collaborators??total;
+ const capacity=companyData?.capacity??500;
+ const available=companyData?.available??Math.max(0,capacity-companyCollaborators);
+
  return <div className="page">
   <div className="page-heading">
    <div>
-    <div className="eyebrow">ACCESO Y PERMISOS</div>
+    <div className="eyebrow">{companyName?`ORGANIZACIÓN: ${companyName.toUpperCase()}`:'ACCESO Y PERMISOS'}</div>
     <h1>Colaboradores</h1>
-    <p>Asigna uno de los {roles.length} roles disponibles y controla el acceso al asistente.</p>
+    <p>Gestiona los colaboradores independientes de {companyName} y asigna sus roles.</p>
    </div>
-   <button className="btn btn-primary" onClick={()=>{setShow(x=>!x);setError('');}}>
-    <UserPlus size={17}/> {show?'Cerrar':'Nuevo usuario'}
-   </button>
+   <div style={{display:'flex',gap:'12px',alignItems:'center',flexWrap:'wrap'}}>
+    <div className="heading-stat" title={`Capacidad de colaboradores para ${companyName}`}>
+     <strong>{companyCollaborators} / {capacity}</strong>
+     <span>Colaboradores ({available} cupos disponibles)</span>
+    </div>
+    <button className="btn btn-primary" onClick={()=>{setShow(x=>!x);setError('');}}>
+     <UserPlus size={17}/> {show?'Cerrar':'Nuevo usuario'}
+    </button>
+   </div>
   </div>
 
   <Notice error={error} success={success} onClose={()=>{setError('');setSuccess(null);}}/>
@@ -153,8 +166,8 @@ export default function Users(){
 
   <div className="section-heading">
    <div>
-    <h2>Personas con acceso</h2>
-    <p>{total} colaborador(es) en tu organización</p>
+    <h2>Personas con acceso en {companyName}</h2>
+    <p>{companyCollaborators} colaborador(es) registrados &bull; Capacidad máxima: {capacity} ({available} cupos disponibles)</p>
    </div>
   </div>
 
