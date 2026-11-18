@@ -74,3 +74,13 @@ Las respuestas de error del backend incluyen error, status y code; la validació
 ## Interfaz del asistente
 
 La conversación utiliza una sola columna. El botón Historial abre un panel de búsqueda que se cierra con Escape o al seleccionar una conversación. Nuevo chat inicia un hilo vacío, sin borrar los anteriores. Las respuestas agrupan fuentes y copiar en su pie; los enlaces conservan la comprobación de permisos del servidor. La biblioteca y la navegación principal siguen disponibles. La estructura está en Chat.jsx y los estilos específicos en frontend/src/styles/chat-workspace.css.
+
+## Mascota del asistente
+
+El pingüino de Luma es un recurso PNG transparente en frontend/public/mascot/luma-penguin.png, rediseñado a partir de la referencia del usuario. PenguinMascot.jsx lo anima con CSS sin añadir librerías de animación.
+
+Estados conectados al flujo del chat: espera, lectura del texto del usuario, carga del historial, preparación de respuesta, llegada de fragmentos de texto, finalización, interrupción y error. La preparación comienza al enviar; la animación de respuesta se activa al recibir un evento delta y la celebración al finalizar la solicitud. Al detener una respuesta vacía se muestra un mensaje de interrupción, no un indicador de escritura infinito.
+
+Pulsar la mascota activa un saludo. El control Pausar animaciones conserva la preferencia en este navegador. prefers-reduced-motion desactiva los movimientos, incluido el saludo, manteniendo los mensajes de estado. La mascota no reproduce audio ni accede al micrófono.
+
+Se verificaron los estados con respuestas HTTP y SSE simuladas en navegador, la pausa, el saludo, movimiento reducido y la visibilidad del cuadro de escritura en móvil; esas comprobaciones no acreditan llamadas reales al proveedor de IA.
