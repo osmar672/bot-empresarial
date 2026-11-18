@@ -131,3 +131,26 @@
  .ai-workspace .chat-welcome .prompt-examples{margin-bottom:9px;gap:6px}
  .ai-workspace .chat-welcome .prompt-examples button{min-height:0;padding-top:8px;padding-bottom:8px;font-size:10px;gap:5px}
 }
+
+/* Explicit microphone and voice-session controls; typed chat always remains available. */
+.composer-voice-actions{display:flex;align-items:center;gap:7px}
+.voice-button{display:grid;place-items:center;width:34px;height:34px;padding:0;border:0;border-radius:50%;background:transparent;color:#9c84ad;flex-shrink:0}
+.voice-button:hover{background:#f0e7f7;color:#78528e}
+.voice-mode-button{background:#815fa8;color:white}
+.voice-mode-button:hover,.voice-mode-active{background:#67468e;color:#fff}
+.voice-button-recording{background:#fbe9ed;color:#bd5769;box-shadow:0 0 0 3px #f9e8ee}
+.voice-session{display:flex;align-items:center;gap:12px;margin:0 0 10px;padding:12px 14px;border:1px solid #e4d6ef;background:#f6f0fb;border-radius:13px;color:#8d70a0;min-width:0}
+.voice-session>div:nth-child(2){min-width:0;flex:1}
+.voice-session strong{font-size:11px;font-weight:600}
+.voice-session p{font-size:10px;line-height:1.6;margin:3px 0 0;overflow-wrap:anywhere;max-height:65px;overflow:auto}
+.voice-wave{height:24px;display:flex;align-items:center;gap:3px;flex-shrink:0}
+.voice-wave i{width:3px;height:7px;border-radius:4px;background:#a085b7}
+.voice-wave-active i{animation:voice-wave .8s ease-in-out infinite alternate}
+.voice-wave i:nth-child(2),.voice-wave i:nth-child(4){height:15px;animation-delay:.15s}.voice-wave i:nth-child(3){height:22px;animation-delay:.3s}
+.ai-workspace .answer-tools{padding-right:108px}
+.read-answer{position:absolute;right:72px;top:0;display:grid;place-items:center;width:28px;height:28px;border:0;border-radius:7px;background:transparent;color:#a18aac}
+.read-answer:hover{background:#eee5f5;color:#79588f}
+@keyframes voice-wave{from{transform:scaleY(.4)}to{transform:scaleY(1)}}
+@media(prefers-reduced-motion:reduce){.voice-wave-active i{animation:none!important}}
+@media(max-width:650px){.compose-controls>span{font-size:8px;max-width:44%;line-height:1.5}.composer-voice-actions{gap:4px}.voice-button{width:32px;height:32px}.voice-session{padding:10px;gap:9px}}
+@media(max-height:600px){.voice-session{padding:8px 10px;gap:8px;margin-bottom:6px}.voice-session p{max-height:32px}.chat-compose:has(.voice-session) .penguin-caption>span{display:none}.chat-compose:has(.voice-session) .penguin-dock{--penguin-size:38px;min-height:38px;padding-bottom:3px}}

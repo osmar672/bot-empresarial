@@ -69,3 +69,6 @@
 @keyframes penguin-curious{0%,100%{transform:rotate(0) translateY(0)}25%{transform:rotate(-9deg) translateY(-3px)}55%{transform:rotate(7deg) translateY(-4px)}75%{transform:rotate(-3deg)}}
 @keyframes penguin-help-appear{from{opacity:0;transform:translateX(-5px)}to{opacity:1;transform:translateX(0)}}
 @media(prefers-reduced-motion:reduce){.penguin-offering-help .penguin-stage .penguin-character,.penguin-offering-help .penguin-body,.penguin-offering-help .penguin-caption{animation:none!important}}
+.penguin-companion[data-state=hearing] .penguin-character{animation:penguin-listen 2s ease-in-out infinite}
+.penguin-companion[data-state=speaking] .penguin-character{animation:penguin-talk .6s ease-in-out infinite}
+.penguin-companion[data-state=hearing] .penguin-halo{background:#e6d9f3;animation:penguin-shadow 2s ease-in-out infinite}

@@ -90,3 +90,15 @@ Se verificaron los estados con respuestas HTTP y SSE simuladas en navegador, el 
 Tras 20 segundos sin actividad y con el campo vacío, el pingüino muestra una invitación breve como «¿Necesitas ayuda con algo?». El aviso dura 8 segundos y no se repite hasta que haya nueva interacción. Es un mensaje local de interfaz: no envía preguntas a la IA ni crea mensajes en el historial.
 
 Escribir, pulsar o desplazarse reinicia la espera. No aparece mientras hay un borrador, una respuesta en curso, un error, el historial abierto ni la pestaña oculta. Al volver a la pestaña comienza una espera nueva. Las animaciones siguen respetando prefers-reduced-motion.
+
+## Preguntas y respuestas por voz
+
+- Micrófono: dicta una pregunta en español y la coloca en el campo para revisarla; no la envía automáticamente.
+- Ondas de voz: activa una sesión explícita de conversación. Al terminar de reconocer una pregunta, la envía, lee la respuesta completa y vuelve a escuchar. Cerrar modo de voz detiene micrófono y lectura. La generación de texto en curso tiene su propio botón Detener respuesta.
+- Altavoz junto a una respuesta: lectura manual. Detener lectura cancela el audio.
+
+Usa SpeechRecognition/webkitSpeechRecognition y speechSynthesis del navegador. El dictado funciona solo donde el navegador lo ofrece (habitualmente Chrome o Edge), requiere permiso de micrófono y HTTPS o localhost. La disponibilidad, voces e idioma dependen del navegador y del sistema. El reconocimiento puede usar servicios externos del navegador; no se garantiza procesamiento local ni funcionamiento sin Internet. La aplicación no guarda grabaciones de audio; guarda la pregunta transcrita mediante el flujo habitual del chat.
+
+La sesión se detiene al cambiar de página, abrir otro historial, iniciar chat nuevo, ocultar la pestaña, perder permisos o fallar el servicio de voz. No se activa al cargar la página. No reconoce mientras lee para evitar transcribir su propia voz. La mascota distingue escucha de micrófono y reproducción.
+
+La lectura elimina marcas de Markdown, enlaces y números de citas y divide respuestas largas en fragmentos. Las funciones de reconocimiento y síntesis fueron verificadas con APIs simuladas en navegador, junto con dictado revisable, envío explícito, conversación automática, interrupción, permisos denegados y diseño móvil. La captura y reproducción reales con hardware requieren validación en el navegador del usuario.
