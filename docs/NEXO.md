@@ -152,3 +152,13 @@ Antes de aceptar conexiones, el backend comprueba si existe pb_mail_outbox en la
 Esto resuelve la ausencia de la cola de correo al registrar cuentas; no sustituye las migraciones de vacaciones, marcaciones o el resto del esquema. Las migraciones se pueden ejecutar después sin perder los correos encolados. Si no es posible crear la tabla, el arranque informa el requisito y no inicia una API incompleta.
 
 Prueba de regresión: scripts/mail-bootstrap.integration.mjs, solo contra una base vacía desechable luma_migration_test_*. Verifica creación, inserción de bienvenida, segundo arranque sin pérdida de datos y compatibilidad con la migración posterior.
+
+### Tarjeta de marcación y sincronización
+
+La tarjeta de jornada muestra un reloj y el tiempo transcurrido, calculados desde una muestra de la hora del servidor y un reloj monotónico del navegador. El contador es informativo; las marcaciones siguen guardándose exclusivamente con UTC_TIMESTAMP de MySQL.
+
+Marcar salida desde la tarjeta o el diálogo requiere confirmación. Cancelar no realiza una petición de marcación. El cliente envía el identificador de la jornada que se confirmó; si otra pestaña la cerró e inició una diferente, la API devuelve 409 y conserva la nueva jornada. Se mantiene compatibilidad con clientes anteriores que todavía no envían entryId.
+
+El estado se consulta al volver a la pestaña y cada 60 segundos mientras es visible. Cuando BroadcastChannel está disponible, otras pestañas de la misma sesión reciben un aviso para volver a consultar el servidor. No se comparten datos de marcaciones a través del canal. Las respuestas de consultas antiguas no sobrescriben una consulta más reciente.
+
+Si la escritura se confirma pero falla la actualización de la vista, se informa que la marcación ya fue guardada y se pide actualizar, en vez de presentar la escritura como fallida. El historial conserva filtros y paginación.

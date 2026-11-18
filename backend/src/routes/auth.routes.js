@@ -1,3 +1,4 @@
+import {photoUrl} from '../services/profilePhoto.service.js';
 import {queueWelcome,dispatchWelcome} from '../services/mail.service.js';
 import {Router} from 'express';
 import bcrypt from 'bcryptjs';
@@ -31,5 +32,5 @@ router.post('/login',limiter,asyncHandler(async(req,res)=>{
   setSession(res,row);res.json({user:{id:row.id,name:row.name,email:row.email,role:row.role}});
 }));
 router.post('/logout',(_req,res)=>{clearSession(res);res.json({ok:true});});
-router.get('/me',authenticate,(req,res)=>res.json({user:{id:req.user.id,name:req.user.name,email:req.user.email,role:req.user.role,role_label:req.user.role_label},company:{id:req.companyId,name:req.user.company_name,plan:req.user.plan_id}}));
+router.get('/me',authenticate,asyncHandler(async(req,res)=>res.json({user:{photo_url:await photoUrl(req.user.id,req.companyId),id:req.user.id,name:req.user.name,email:req.user.email,role:req.user.role,role_label:req.user.role_label},company:{id:req.companyId,name:req.user.company_name,plan:req.user.plan_id}})));
 export default router;

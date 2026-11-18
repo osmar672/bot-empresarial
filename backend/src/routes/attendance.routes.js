@@ -28,7 +28,7 @@ router.get('/history',asyncHandler(async(req,res)=>{
  res.json({entries,total:total.total,page:query.page,pageSize:20});
 }));
 async function mark(req,checkIn){
- emptyBody.parse(req.body||{});
+ const payload=checkIn?emptyBody.parse(req.body||{}):z.object({entryId:z.string().uuid().optional()}).strict().parse(req.body||{});
  return transaction(async cx=>{
   // Serialize marks for this authenticated employee across tabs and concurrent requests.
   const [users]=await cx.execute('SELECT id FROM pb_users WHERE id=? AND company_id=? FOR UPDATE',[req.user.id,req.companyId]);
@@ -40,6 +40,7 @@ async function mark(req,checkIn){
    return {ok:true,id};
   }
   if(!open.length)throw new HttpError(409,'No tienes una jornada abierta. Primero debes marcar la entrada.');
+  if(payload.entryId&&payload.entryId!==open[0].id)throw new HttpError(409,'La jornada cambió en otra ventana. Actualiza la vista y confirma de nuevo la salida.');
   await cx.execute('UPDATE pb_attendance SET checked_out_at=UTC_TIMESTAMP(3) WHERE id=? AND company_id=? AND user_id=? AND checked_out_at IS NULL',[open[0].id,req.companyId,req.user.id]);
   return {ok:true,id:open[0].id};
  });

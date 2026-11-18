@@ -16,29 +16,29 @@ router.get('/',asyncHandler(async(req,res)=>{
   const search=typeof req.query.search==='string'?req.query.search.trim():'';
   const role=typeof req.query.role==='string'?req.query.role.trim():'';
 
-  const conditions=['company_id=?'];
+  const conditions=['u.company_id=?'];
   const params=[req.companyId];
 
   if(search){
-    conditions.push('(name LIKE ? OR email LIKE ?)');
+    conditions.push('(u.name LIKE ? OR u.email LIKE ?)');
     const pattern=`%${search}%`;
     params.push(pattern,pattern);
   }
 
   if(role){
-    conditions.push('role=?');
+    conditions.push('u.role=?');
     params.push(role);
   }
 
   const whereClause=conditions.join(' AND ');
-  const countRow=await one(`SELECT COUNT(*) AS total FROM pb_users WHERE ${whereClause}`,params);
+  const countRow=await one(`SELECT COUNT(*) AS total FROM pb_users u WHERE ${whereClause}`,params);
   const total=Number(countRow?.total||0);
   const totalPages=Math.max(1,Math.ceil(total/limit));
   const currentPage=Math.min(page,totalPages);
   const offset=(currentPage-1)*limit;
 
   const users=await many(
-    `SELECT id,name,email,role,created_at FROM pb_users WHERE ${whereClause} ORDER BY created_at ASC, id ASC LIMIT ? OFFSET ?`,
+    `SELECT u.id,u.name,u.email,u.role,u.created_at,u.company_id,c.name AS company_name,r.label AS role_label FROM pb_users u JOIN pb_companies c ON c.id=u.company_id JOIN pb_roles r ON r.code=u.role WHERE ${whereClause} ORDER BY u.created_at ASC, u.id ASC LIMIT ? OFFSET ?`,
     [...params,limit,offset]
   );
 

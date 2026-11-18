@@ -13,6 +13,8 @@ try{
  assert.equal((await request('/attendance/in','POST',{user_id:b.data.user.id,checked_in_at:'2000-01-01'},aCookie)).status,400);
  let results=await Promise.all([request('/attendance/in','POST',{},aCookie),request('/attendance/in','POST',{},aCookie)]);assert.deepEqual(results.map(r=>r.status).sort(),[201,409]);
  const status=await request('/attendance','GET',null,aCookie);assert.equal(status.data.entries.length,1);assert.ok(status.data.openEntry);assert.ok(Math.abs(new Date(status.data.openEntry.checked_in_at)-new Date(status.data.serverTime))<10000);
+ assert.equal((await request('/attendance/out','POST',{entryId:randomUUID()},aCookie)).status,409);
+ assert.ok((await request('/attendance','GET',null,aCookie)).data.openEntry);
  assert.equal((await request('/attendance','GET',null,b.cookie)).data.entries.length,0);
  // A second employee of the same company cannot read or close the administrator's entry.
  const email=randomUUID()+'@example.test';assert.equal((await request('/users','POST',{name:'Employee time',email,password:'SecureTime2026!',role:'colaborador'},aCookie)).status,201);
@@ -24,5 +26,7 @@ try{
  results=await Promise.all([request('/attendance/out','POST',{},aCookie),request('/attendance/out','POST',{},aCookie)]);assert.deepEqual(results.map(r=>r.status).sort(),[200,409]);
  const final=await request('/attendance','GET',null,aCookie);assert.equal(final.data.openEntry,null);assert.equal(final.data.entries.length,1);assert.ok(final.data.entries[0].checked_out_at);assert.ok(final.data.entries[0].duration_seconds>=0);
  assert.equal((await request('/attendance/in','POST',{},aCookie)).status,201);assert.equal((await request('/attendance','GET',null,aCookie)).data.entries.length,2);
+ assert.equal((await request('/attendance/out','POST',{entryId:status.data.openEntry.id},aCookie)).status,409);
+ assert.ok((await request('/attendance','GET',null,aCookie)).data.openEntry);
  console.log('PASS: authenticated attendance, server times, forged payload rejected, concurrent duplicate protection, employee/tenant isolation, explicit checkout and logout without checkout.');
 }finally{for(const company of tenants)await run('DELETE FROM pb_companies WHERE id=?',[company]);await new Promise(r=>server.close(r));await pool.end();}

@@ -33,6 +33,11 @@ try{
  const [[row]]=await cx.execute('SELECT answer,total_tokens,conversation_id FROM pb_messages WHERE id=?',[message]);assert.equal(row.answer,'Respuesta conservada');assert.equal(row.total_tokens,7);assert.ok(row.conversation_id);
  const [[thread]]=await cx.execute('SELECT title,updated_at FROM pb_conversations WHERE id=?',[row.conversation_id]);assert.equal(thread.title,'Historial anterior');assert.ok(thread.updated_at);
  const [[count]]=await cx.query('SELECT COUNT(*) AS n FROM pb_conversations');assert.equal(count.n,1);
- const [[migrations]]=await cx.query('SELECT COUNT(*) AS n FROM pb_schema_migrations');assert.equal(migrations.n,7);
+ const [[migrations]]=await cx.query('SELECT COUNT(*) AS n FROM pb_schema_migrations');const entries=(await fs.readdir(new URL('database/migrations/',root))).filter(name=>/^\d{3}_[\w-]+\.sql$/.test(name));assert.equal(migrations.n,entries.length);
+ const original='2754fbc6f90e0bd515558bdbd4cfb54f71df893666fb0344cde6012b0318b3bb';
+ await cx.execute('UPDATE pb_schema_migrations SET checksum=? WHERE filename=?',[original,'002_conversations_and_tracking.sql']);
+ execFileSync(process.execPath,[fileURLToPath(new URL('backend/src/db/migrate.js',root))],{env:process.env,stdio:'pipe'});
+ const [[legacy]]=await cx.execute('SELECT checksum FROM pb_schema_migrations WHERE filename=?',['002_conversations_and_tracking.sql']);assert.equal(legacy.checksum,original);
+ const [[preserved]]=await cx.execute('SELECT answer FROM pb_messages WHERE id=?',[message]);assert.equal(preserved.answer,'Respuesta conservada');
  console.log('PASS: legacy conversations without updated_at, partially applied tracking DDL, history preserved, and repeated migration.');
 }finally{await cx.end();}

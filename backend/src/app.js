@@ -38,6 +38,7 @@ app.use('/api',(req,res,next)=>{
   }next();
 });
 app.get('/api/health',(_req,res)=>res.json({ok:true,app:'Luma',database:'mysql',chat:'groq',features:{attendance:true,attendanceHistory:true,vacationRequests:true,schedules:true}}));
+app.use('/api/auth/google',googleAuth);
 app.use('/api/schedules',schedules);app.use('/api/vacations',vacations);app.use('/api/attendance',attendance);app.use('/api/profile',profile);app.use('/api/auth',auth);app.use('/api/users',users);app.use('/api/roles',roles);app.use('/api/documents',docs);app.use('/api/drive',drive);app.use('/api/chat',chat);app.use('/api/usage',usage);
 app.use('/api',(_req,_res,next)=>next(new HttpError(404,'Ruta no encontrada')));
 const dist=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../frontend/dist');

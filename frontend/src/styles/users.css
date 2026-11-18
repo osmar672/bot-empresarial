@@ -1,0 +1,145 @@
+.users-table-wrap {
+  position: relative;
+}
+.users-page .users-table {
+  min-width: 1050px;
+}
+.users-table th {
+  white-space: nowrap;
+}
+.users-table td {
+  font-size: 12px;
+  vertical-align: middle;
+  line-height: 1.6;
+}
+.users-table-person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 180px;
+}
+.users-table-person .member-avatar {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  font-size: 13px;
+}
+.users-table-person strong {
+  overflow-wrap: anywhere;
+}
+.users-email {
+  color: #6f617d;
+  overflow-wrap: anywhere;
+}
+.users-table select {
+  font: inherit;
+  max-width: 230px;
+  min-width: 160px;
+  padding: 9px;
+  border: 1px solid #e4dbea;
+  border-radius: 8px;
+  background: #fdfbff;
+  color: #584368;
+}
+.users-password-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border-radius: 20px;
+  background: #f3f0f7;
+  color: #756380;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.users-table .btn {
+  white-space: nowrap;
+}
+.created-credentials {
+  margin: 0 0 24px;
+  padding: 24px;
+  border: 1px solid #dbcee9;
+  background: #fcfaff;
+  border-radius: 16px;
+}
+.created-credentials header {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+}
+.created-credentials h2 {
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+.created-credentials p {
+  font-size: 13px;
+  color: #776482;
+  line-height: 1.6;
+}
+.created-credentials dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin: 15px 0 22px;
+}
+.created-credentials dt {
+  font-size: 12px;
+  color: #7e698c;
+  margin-bottom: 6px;
+}
+.created-credentials dd {
+  margin: 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.created-password {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  align-items: center;
+  border-top: 1px solid #e9e0ef;
+  padding-top: 18px;
+}
+.created-password span {
+  display: block;
+  font-size: 12px;
+  color: #7e698c;
+  margin-bottom: 7px;
+}
+.created-password code {
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.created-password > div {
+  min-width: 0;
+}
+.initial-password-input {
+  display: flex;
+  gap: 8px;
+}
+.initial-password-input input {
+  min-width: 0;
+  flex: 1;
+}
+.initial-password-input .btn {
+  flex-shrink: 0;
+}
+.users-page .create-user > .field {
+  margin-top: 18px;
+  max-width: 450px;
+}
+@media (max-width: 560px) {
+  .created-credentials {
+    padding: 18px;
+  }
+  .created-credentials dl {
+    grid-template-columns: 1fr;
+  }
+  .created-password {
+    align-items: flex-start;
+  }
+  .created-password .btn {
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+}
