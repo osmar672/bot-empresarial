@@ -1,3 +1,4 @@
+import {AttendanceProvider} from '../context/AttendanceContext.jsx';
 import {useState} from 'react';
 import {useAuth} from '../context/AuthContext.jsx';
 import {Spinner} from '../components/UI.jsx';
@@ -12,5 +13,5 @@ export default function App(){const {loading,session}=useAuth(),[tab,setTab]=use
  if(loading)return <div className="boot"><Spinner label="Preparando tu espacio…"/></div>;
  if(!session)return <Login/>;
  const page=tab==='profile'?<Profile/>:tab==='documents'?<Documents/>:tab==='users'&&session.user.role==='admin'?<Users/>:tab==='usage'&&session.user.role==='admin'?<Usage/>:<Chat onDocuments={()=>setTab('documents')}/>;
- return <Shell tab={tab} setTab={setTab}>{page}</Shell>;
+ return <AttendanceProvider key={session.user.id}><Shell tab={tab} setTab={setTab}>{page}</Shell></AttendanceProvider>;
 }

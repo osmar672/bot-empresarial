@@ -1,10 +1,11 @@
+import {AttendanceLauncher,useAttendance} from '../context/AttendanceContext.jsx';
 import useStoredToggle from '../hooks/useStoredToggle.js';
 import {useEffect,useState} from 'react';
 import {BookOpen,ChevronRight,FileText,LogOut,Menu,Minimize2,Maximize2,MessageSquareText,ShieldCheck,Users,UserRound,X} from 'lucide-react';
 import {useAuth} from '../context/AuthContext.jsx';
 const tabs=[{id:'profile',label:'Mi perfil',icon:UserRound},{id:'chat',label:'Asistente',icon:MessageSquareText},{id:'documents',label:'Documentos',icon:FileText},{id:'users',label:'Colaboradores',icon:Users},{id:'usage',label:'Plan y consumo',icon:ShieldCheck}];
 export default function Shell({tab,setTab,children}){
- const {session,logout}=useAuth();const [open,setOpen]=useState(false);
+ const {session}=useAuth();const {requestLogout}=useAttendance();const [open,setOpen]=useState(false);
  useEffect(()=>setOpen(false),[tab]);
  const [sidebarHidden,toggleSidebar]=useStoredToggle('luma.sidebarHidden');
  const first=session?.user?.name?.charAt(0)?.toUpperCase()||'U';
@@ -16,8 +17,8 @@ export default function Shell({tab,setTab,children}){
    <nav className="side-nav" aria-label="Navegación principal">{tabs.filter(t=>!['users','usage'].includes(t.id)||session?.user?.role==='admin').map(({id,label,icon:Icon})=><button key={id} aria-label={label} aria-current={tab===id?'page':undefined} data-tooltip={label} className={'nav-item '+(tab===id?'nav-selected':'')} onClick={()=>setTab(id)}><Icon size={19} strokeWidth={1.9}/><span>{label}</span>{tab===id&&<span className="nav-indicator"/>}</button>)}</nav>
    <div className="sidebar-spacer"/>
    <a className="guide-link" href="/guia-practica.pdf" target="_blank" rel="noreferrer" aria-label="Guía de la práctica" data-tooltip="Guía de la práctica"><BookOpen size={17}/><span>Guía de la práctica</span><ChevronRight size={15}/></a>
-   <div className="profile-card"><button className="profile-open" aria-label="Abrir mi perfil" onClick={()=>setTab('profile')}/><div className="avatar">{first}</div><div className="profile-copy"><strong title={session?.user?.name}>{session?.user?.name}</strong><span>{session?.company?.name}</span></div><button className="icon-button" title="Cerrar sesión" onClick={logout}><LogOut size={18}/></button></div>
+   <div className="profile-card"><button className="profile-open" aria-label="Abrir mi perfil" onClick={()=>setTab('profile')}/><div className="avatar">{first}</div><div className="profile-copy"><strong title={session?.user?.name}>{session?.user?.name}</strong><span>{session?.company?.name}</span></div><button className="icon-button" title="Cerrar sesión" onClick={requestLogout}><LogOut size={18}/></button></div>
   </aside>
-  <main className="main-area"><header className="topbar"><button className="icon-button mobile-menu" aria-label="Abrir menú" aria-expanded={open} aria-controls="workspace-navigation" onClick={()=>setOpen(true)}><Menu size={21}/></button><div className="breadcrumbs">ESPACIO DE TRABAJO <ChevronRight size={13}/> <strong>{tabs.find(t=>t.id===tab)?.label}</strong></div><div className="topbar-right"><span className="role-tag">{session?.user?.role_label||session?.user?.role||'Usuario'}</span><button className="tiny-avatar" aria-label="Abrir mi perfil" onClick={()=>setTab('profile')}>{first}</button></div></header><div className={"main-scroll "+(tab==='chat'?'chat-scroll':'')}>{children}</div></main>
+  <main className="main-area"><header className="topbar"><button className="icon-button mobile-menu" aria-label="Abrir menú" aria-expanded={open} aria-controls="workspace-navigation" onClick={()=>setOpen(true)}><Menu size={21}/></button><div className="breadcrumbs">ESPACIO DE TRABAJO <ChevronRight size={13}/> <strong>{tabs.find(t=>t.id===tab)?.label}</strong></div><div className="topbar-right"><AttendanceLauncher/><span className="role-tag">{session?.user?.role_label||session?.user?.role||'Usuario'}</span><button className="tiny-avatar" aria-label="Abrir mi perfil" onClick={()=>setTab('profile')}>{first}</button></div></header><div className={"main-scroll "+(tab==='chat'?'chat-scroll':'')}>{children}</div></main>
  </div>;
 }

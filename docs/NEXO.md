@@ -102,3 +102,17 @@ Usa SpeechRecognition/webkitSpeechRecognition y speechSynthesis del navegador. E
 La sesión se detiene al cambiar de página, abrir otro historial, iniciar chat nuevo, ocultar la pestaña, perder permisos o fallar el servicio de voz. No se activa al cargar la página. No reconoce mientras lee para evitar transcribir su propia voz. La mascota distingue escucha de micrófono y reproducción.
 
 La lectura elimina marcas de Markdown, enlaces y números de citas y divide respuestas largas en fragmentos. Las funciones de reconocimiento y síntesis fueron verificadas con APIs simuladas en navegador, junto con dictado revisable, envío explícito, conversación automática, interrupción, permisos denegados y diseño móvil. La captura y reproducción reales con hardware requieren validación en el navegador del usuario.
+
+## Marcar ficha: entrada y salida
+
+Aplicar `npm run db:migrate` antes de iniciar la versión con marcaciones. La migración 005_attendance.sql añade pb_attendance sin modificar jornadas anteriores ni tablas ajenas.
+
+Al iniciar sesión se ofrece un recordatorio opcional. El botón Marcar ficha permanece en la barra superior; Mi perfil muestra el estado y las últimas 30 jornadas con entrada, salida y duración de jornadas cerradas. Cada usuario consulta y marca únicamente su propia jornada, dentro de su empresa.
+
+Entrada y salida se guardan con UTC_TIMESTAMP del servidor MySQL; la interfaz muestra America/Costa_Rica. No se aceptan horas ni identidades suministradas por el cliente. Un bloqueo transaccional y una restricción única impiden dos jornadas abiertas incluso con solicitudes concurrentes.
+
+Cerrar sesión ofrece Marcar salida y salir, Salir sin marcar o Volver cuando hay una jornada abierta. No se registra nada por iniciar sesión, cerrar pestaña, perder conexión o salir sin marcar. Si falla el registro de salida, la sesión se mantiene abierta y se muestra el error. Si no se puede consultar el estado de jornada, sigue disponible salir sin marcar.
+
+Las marcaciones no alteran automáticamente vacaciones, horarios ni saldos laborales. No se ha añadido edición retroactiva o gestión de marcaciones de otras personas.
+
+Validación adicional: `npm run test:attendance` prueba contra la base local migrada: autenticación, hora del servidor, rechazo de suplantación, concurrencia, privacidad entre empleados/empresas y cierre de sesión sin salida automática. Crea y elimina sus empresas de prueba.
