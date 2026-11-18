@@ -35,3 +35,18 @@ h1,h2,h3{font-family:inherit;color:var(--ink);letter-spacing:-.035em}h1{font-siz
  .desktop-sidebar-toggle{display:none}
  .topbar .breadcrumbs{min-width:0;overflow:hidden;white-space:nowrap}
 }
+
+/* Panel controls belong to their own panel; restore actions include a label. */
+.side-heading-row{display:flex;align-items:center;justify-content:space-between;gap:4px;margin:0 5px 10px 12px;letter-spacing:.1em;font-size:9px}
+.panel-close{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:26px;height:26px;padding:0;border:1px solid transparent;border-radius:8px;background:transparent;color:#95889f;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.panel-close:hover{background:#e7dff0;border-color:#dacee8;color:#604285}
+.panel-restore{display:inline-flex;align-items:center;justify-content:center;gap:7px;width:auto;min-height:32px;padding:6px 11px;border:1px solid #e4dceb;border-radius:9px;background:#fffdfa;color:#776385;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 1px 3px #38254904;transition:background .15s,border-color .15s,color .15s}
+.panel-restore:hover{background:#f0e9f8;border-color:#cdbbdf;color:#5d3b89}
+.desktop-sidebar-toggle{margin-right:0}
+.topbar{gap:16px}
+.thread-toggle{display:none}
+.thread-toggle-visible{display:inline-flex}
+.thread-heading{font-size:11px;font-weight:600;min-height:32px;padding-bottom:8px;gap:8px}
+.new-chat{gap:9px}
+@media(max-width:960px){.thread-toggle{display:inline-flex}}
+@media(max-width:800px){.desktop-panel-close,.desktop-sidebar-toggle{display:none}.topbar{gap:10px}.chat-header{gap:10px}.panel-restore{padding:6px 9px}}
