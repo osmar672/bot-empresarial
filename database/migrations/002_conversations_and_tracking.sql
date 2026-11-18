@@ -16,15 +16,15 @@ CREATE TABLE IF NOT EXISTS pb_conversations (
 
 -- Columnas de trazabilidad, tokens y modelo en pb_messages
 ALTER TABLE pb_messages
-  ADD COLUMN IF NOT EXISTS conversation_id CHAR(36) NULL AFTER user_id,
-  ADD COLUMN IF NOT EXISTS model VARCHAR(100) NULL AFTER sources,
-  ADD COLUMN IF NOT EXISTS provider VARCHAR(50) NOT NULL DEFAULT 'groq' AFTER model,
-  ADD COLUMN IF NOT EXISTS total_tokens INT NOT NULL DEFAULT 0 AFTER output_tokens,
-  ADD COLUMN IF NOT EXISTS duration_ms INT NULL AFTER total_tokens,
-  ADD COLUMN IF NOT EXISTS intent VARCHAR(100) NULL AFTER duration_ms,
-  ADD COLUMN IF NOT EXISTS agent VARCHAR(100) NULL DEFAULT 'policybot-rag' AFTER intent,
-  ADD COLUMN IF NOT EXISTS escalated BOOLEAN NOT NULL DEFAULT FALSE AFTER agent,
-  ADD COLUMN IF NOT EXISTS error_message VARCHAR(500) NULL AFTER escalated;
+  ADD COLUMN conversation_id CHAR(36) NULL AFTER user_id,
+  ADD COLUMN model VARCHAR(100) NULL AFTER sources,
+  ADD COLUMN provider VARCHAR(50) NOT NULL DEFAULT 'groq' AFTER model,
+  ADD COLUMN total_tokens INT NOT NULL DEFAULT 0 AFTER output_tokens,
+  ADD COLUMN duration_ms INT NULL AFTER total_tokens,
+  ADD COLUMN intent VARCHAR(100) NULL AFTER duration_ms,
+  ADD COLUMN agent VARCHAR(100) NULL DEFAULT 'policybot-rag' AFTER intent,
+  ADD COLUMN escalated BOOLEAN NOT NULL DEFAULT FALSE AFTER agent,
+  ADD COLUMN error_message VARCHAR(500) NULL AFTER escalated;
 
 -- Índice para consultas de mensajes por conversación respetando tenant
 ALTER TABLE pb_messages
@@ -34,8 +34,8 @@ ALTER TABLE pb_messages
 -- ON DELETE CASCADE elimina los mensajes asociados si se borra la conversación
 ALTER TABLE pb_messages
   ADD CONSTRAINT fk_msg_conv
-  FOREIGN KEY (conversation_id, company_id)
-  REFERENCES pb_conversations(id, company_id)
+  FOREIGN KEY (conversation_id, company_id, user_id)
+  REFERENCES pb_conversations(id, company_id, user_id)
   ON DELETE CASCADE;
 
 -- Backfill seguro: si existen mensajes previos sin conversación, agruparlos en una conversación por defecto

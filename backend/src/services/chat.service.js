@@ -63,5 +63,5 @@ export async function processQuestion({companyId,userId,companyName,question,rol
     if(signal.aborted)throw new Error('Respuesta interrumpida');
     await run(`UPDATE pb_messages SET answer=?,sources=?,input_tokens=?,output_tokens=?,state='ok',finished_at=NOW(3) WHERE id=? AND company_id=?`,[answer,JSON.stringify(validSources),inputTokens,outputTokens,messageId,companyId]);
     onEvent({type:'done',messageId,conversationId:threadId,inputTokens,outputTokens});
-  }catch(e){await run(`UPDATE pb_messages SET state='error',answer=?,sources=?,error_message=?,finished_at=NOW(3) WHERE id=? AND company_id=?`,[answer,JSON.stringify(validSources),String(e.message||'Error').slice(0,200),messageId,companyId]).catch(()=>{});throw e;}
+  }catch(e){await run(`UPDATE pb_messages SET state='error',answer=?,sources=?,input_tokens=?,output_tokens=?,error_message=?,finished_at=NOW(3) WHERE id=? AND company_id=?`,[answer,JSON.stringify(validSources),inputTokens,outputTokens,String(e.message||'Error').slice(0,200),messageId,companyId]).catch(()=>{});throw e;}
 }

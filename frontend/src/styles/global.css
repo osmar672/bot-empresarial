@@ -9,3 +9,111 @@
 .role-access-option input { margin-top: 4px; flex: 0 0 auto; }
 .role-access-option small { display: block; color: var(--text-muted, #5d6574); }
 .role-access :focus-visible { outline: 2px solid #26634c; outline-offset: 3px; }
+
+/* Toolbar de búsqueda y paginación para colaboradores */
+.users-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.search-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 260px;
+  max-width: 480px;
+}
+.search-icon {
+  position: absolute;
+  left: 13px;
+  color: #8fa0a5;
+  pointer-events: none;
+}
+.search-input {
+  width: 100%;
+  height: 42px;
+  border: 1px solid #dbe4e7;
+  border-radius: 9px;
+  padding: 0 38px 0 38px;
+  background: #ffffff;
+  outline: none;
+  color: #253940;
+  font-size: 13px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.search-input:focus {
+  border-color: #3b9986;
+  box-shadow: 0 0 0 3px #e0f3ee;
+}
+.clear-search-btn {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: 0;
+  color: #9cb0b4;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.clear-search-btn:hover {
+  background: #eef4f4;
+  color: #4b666c;
+}
+.toolbar-stats {
+  font-size: 12px;
+  color: #7b8e94;
+  font-weight: 500;
+}
+
+/* Barra de paginación real */
+.pagination-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 21px;
+  border-top: 1px solid #edf1f2;
+  background: #fcfdfe;
+  flex-wrap: wrap;
+}
+.pagination-info {
+  font-size: 12px;
+  color: #6d8187;
+}
+.pagination-info strong {
+  color: #233b42;
+}
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-sm {
+  min-height: 32px;
+  padding: 0 11px;
+  font-size: 11.5px;
+  gap: 6px;
+}
+.pagination-page-badge {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #2f655b;
+  background: #e8f5f1;
+  padding: 5px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+@media(max-width: 640px) {
+  .btn-label-desktop { display: none; }
+  .users-toolbar { flex-direction: column; align-items: stretch; }
+  .search-input-wrap { max-width: 100%; }
+  .pagination-bar { flex-direction: column; align-items: stretch; gap: 12px; }
+  .pagination-buttons { justify-content: center; }
+}

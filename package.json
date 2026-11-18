@@ -15,6 +15,7 @@
     "db:status": "npm run migrate -w backend -- --status",
     "db:dry-run": "npm run migrate -w backend -- --dry-run",
     "db:seed": "npm run seed -w backend",
+    "db:seed:collaborators": "node backend/src/db/seedCollaborators.js",
     "test": "npm run test -w backend",
     "smoke": "node scripts/smoke-api.mjs",
     "test:integration": "node --test scripts/access.integration.mjs"
