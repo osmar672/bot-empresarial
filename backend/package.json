@@ -9,6 +9,7 @@
     "migrate": "node src/db/migrate.js",
     "doctor": "node src/db/doctor.js",
     "seed": "node src/db/seedDemo.js",
+    "seed:collaborators": "node src/db/seedCollaborators.js",
     "test": "node --test tests/*.test.js"
   },
   "dependencies": {
