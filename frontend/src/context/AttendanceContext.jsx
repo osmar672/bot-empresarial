@@ -1,6 +1,6 @@
 import {createContext,useCallback,useContext,useEffect,useRef,useState} from 'react';
 import {Clock3,LogIn,LogOut,X} from 'lucide-react';
-import {api,HTTP_STATUS} from '../services/api.js';
+import {api,ApiError,HTTP_STATUS} from '../services/api.js';
 import {useAuth} from './AuthContext.jsx';
 import {Notice,Spinner} from '../components/UI.jsx';
 const Context=createContext(null);
@@ -10,7 +10,8 @@ export function AttendanceProvider({children}){
  const {logout,attendanceOffer,dismissAttendanceOffer}=useAuth();
  const [data,setData]=useState(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState(null),[success,setSuccess]=useState(null),[open,setOpen]=useState(false),[exiting,setExiting]=useState(false);
  const dialog=useRef(null),working=useRef(false);
- const refresh=useCallback(async()=>{const result=await api('/attendance');setData(result);return result;},[]);
+ const refresh=useCallback(async()=>{try{const result=await api('/attendance');setData(result);return result;}catch(e){if(e.status===404)throw new ApiError('El servidor que está respondiendo no tiene la versión de marcaciones. Detén la aplicación con Ctrl + C, actualiza con git pull, ejecuta npm run db:migrate y vuelve a iniciar npm run dev.',404);throw e;}},[]);
+ async function retry(){setLoading(true);setError(null);try{await refresh();}catch(e){setError(e);}finally{setLoading(false);}}
  useEffect(()=>{refresh().catch(setError).finally(()=>setLoading(false));},[refresh]);
  useEffect(()=>{if(open&&!dialog.current.open)dialog.current.showModal();if(!open&&dialog.current.open)dialog.current.close();},[open]);
  function close(){if(working.current)return;setOpen(false);setExiting(false);}
@@ -23,7 +24,7 @@ export function AttendanceProvider({children}){
  }
  async function leave(withMark){if(working.current)return;if(withMark&&!await mark('out'))return;working.current=true;setBusy(true);try{await logout();}catch(e){setError(e);}finally{working.current=false;setBusy(false);}}
  const active=data?.openEntry;
- return <Context.Provider value={{data,loading,busy,error,success,refresh,mark,show,requestLogout}}>{children}
+ return <Context.Provider value={{data,loading,busy,error,success,refresh,retry,mark,show,requestLogout}}>{children}
   {attendanceOffer&&data&&!open&&!error&&<aside className="attendance-welcome" aria-label="Recordatorio de marcación"><button className="icon-button" aria-label="Cerrar recordatorio de marcación" onClick={dismissAttendanceOffer}><X size={15}/></button><Clock3 size={20}/><strong>{active?'Tienes una jornada abierta':'¿Vas a empezar tu jornada?'}</strong><p>{active?'Tu entrada sigue registrada; puedes marcar la salida cuando termines.':'Registra tu entrada cuando comiences a trabajar.'}</p><button className="btn btn-primary" onClick={show}>{active?'Ver mi jornada':'Marcar ficha'}</button></aside>}
   <dialog ref={dialog} className="attendance-dialog" aria-labelledby="attendance-title" onCancel={e=>{e.preventDefault();close();}}>
    <div className="section-heading"><div><div className="eyebrow">CONTROL DE JORNADA</div><h2 id="attendance-title">{exiting?'Antes de salir':'Marcar ficha'}</h2></div><button className="icon-button" disabled={busy} aria-label="Cerrar marcación" onClick={close}><X size={19}/></button></div>

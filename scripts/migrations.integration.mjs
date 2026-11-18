@@ -33,6 +33,6 @@ try{
  const [[row]]=await cx.execute('SELECT answer,total_tokens,conversation_id FROM pb_messages WHERE id=?',[message]);assert.equal(row.answer,'Respuesta conservada');assert.equal(row.total_tokens,7);assert.ok(row.conversation_id);
  const [[thread]]=await cx.execute('SELECT title,updated_at FROM pb_conversations WHERE id=?',[row.conversation_id]);assert.equal(thread.title,'Historial anterior');assert.ok(thread.updated_at);
  const [[count]]=await cx.query('SELECT COUNT(*) AS n FROM pb_conversations');assert.equal(count.n,1);
- const [[migrations]]=await cx.query('SELECT COUNT(*) AS n FROM pb_schema_migrations');assert.equal(migrations.n,6);
+ const [[migrations]]=await cx.query('SELECT COUNT(*) AS n FROM pb_schema_migrations');assert.equal(migrations.n,7);
  console.log('PASS: legacy conversations without updated_at, partially applied tracking DDL, history preserved, and repeated migration.');
 }finally{await cx.end();}
