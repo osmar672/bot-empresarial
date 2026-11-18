@@ -1,3 +1,4 @@
+import {ensureMailOutbox} from './db/bootstrapMail.js';
 import {startMailWorker} from './services/mail.service.js';
 import app from './app.js';
 import {env,assertConfig} from './config/env.js';
@@ -8,6 +9,8 @@ try{
   await pool.query('SELECT 1');
   try{await pool.query('SELECT id FROM pb_plans LIMIT 1');}
   catch(error){if(error.code==='ER_NO_SUCH_TABLE')throw new Error('Faltan las tablas de PolicyBot. Desde la carpeta principal ejecuta: npm run db:migrate');throw error;}
+  const mailSchema=await ensureMailOutbox();
+  if(mailSchema.created)console.log('Tabla pb_mail_outbox creada automáticamente.');
   const server=app.listen(env.port,()=>console.log(`PolicyBot API http://127.0.0.1:${env.port}`));
   // Allow slow connections to finish a 1 GiB multipart upload (streamed to disk).
   server.requestTimeout=30*60*1000;

@@ -1,3 +1,7 @@
+## Inicio de sesión con Google
+
+El botón de Google y la verificación del backend están implementados. Configura `GOOGLE_CLIENT_ID`, aplica las migraciones y consulta [la guía de configuración](docs/LOGIN_GOOGLE.md). Solo acceden usuarios ya registrados; conservan empresa y rol.
+
 ## Roles y conversaciones persistentes
 
 Consulta [la guía de permisos y migración](docs/ROLES_Y_CONVERSACIONES.md) para configurar los 100 roles, el acceso a fuentes y las conversaciones privadas. Al migrar, los documentos existentes quedan accesibles solo para administradores hasta revisar sus permisos.

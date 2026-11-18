@@ -6,6 +6,7 @@ import vacations from './routes/vacations.routes.js';
 import attendance from './routes/attendance.routes.js';
 import schedules from './routes/schedules.routes.js';
 import auth from './routes/auth.routes.js';
+import googleAuth from './routes/google-auth.routes.js';
 import users from './routes/users.routes.js';
 import roles from './routes/roles.routes.js';
 import docs from './routes/documents.routes.js';
@@ -17,7 +18,15 @@ import {errors} from './middlewares/error.js';
 import {HttpError} from './utils/errors.js';
 import {env} from './config/env.js';
 const app=express();app.disable('x-powered-by');
-app.use(helmet({contentSecurityPolicy:env.nodeEnv==='production'?undefined:false}));
+app.use(helmet({
+ crossOriginOpenerPolicy:{policy:'same-origin-allow-popups'},
+ contentSecurityPolicy:env.nodeEnv==='production'?{directives:{
+  'script-src':["'self'",'https://accounts.google.com/gsi/'],
+  'connect-src':["'self'",'https://accounts.google.com/gsi/'],
+  'frame-src':['https://accounts.google.com/gsi/'],
+  'style-src':["'self'","'unsafe-inline'",'https://accounts.google.com/gsi/']
+ }}:false
+}));
 app.use(express.json({limit:'40kb'}));
 // Evita escrituras desde orígenes externos con cookies; Vite usa proxy same-origin.
 app.use('/api',(req,res,next)=>{
