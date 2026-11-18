@@ -18,7 +18,7 @@ export default function Usage() {
   useEffect(() => {
     api('/usage')
       .then(res => setData(res))
-      .catch(e => setError(e.message));
+      .catch(e => setError(e));
   }, []);
 
   const usage = data?.usage;

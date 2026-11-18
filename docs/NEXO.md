@@ -57,3 +57,16 @@ En Documentos → Google Drive, el estado distingue un JSON ausente, vacío, inv
 6. Pegar el enlace completo o el ID de la carpeta, guardar, comprobar conexión y sincronizar.
 
 Los errores de permisos, API deshabilitada, autenticación, cuota y conexión tienen mensajes distintos. La sincronización parcial muestra los archivos fallidos y no anuncia éxito completo. Las subcarpetas no se recorren automáticamente.
+
+## Avisos y códigos HTTP
+
+Las eliminaciones de documentos y conversaciones utilizan un diálogo de Luma. Cancelar, cerrar o pulsar Escape no envía una solicitud de eliminación. El foco inicial está en Cancelar.
+
+Los avisos distinguen éxito, información y errores. Muestran el código HTTP real cuando está disponible, detalles de campos inválidos y una orientación de recuperación. La falta de conexión se identifica sin inventar un código HTTP.
+
+- 2xx (200, 201, 204): solicitudes completadas correctamente.
+- 3xx (301, 302, 304, 307, 308): redirecciones o información de caché, no errores del servidor. El navegador sigue automáticamente las redirecciones habituales; no se inventa un código intermedio si no está disponible.
+- 4xx: datos inválidos (400), autenticación (401), permisos (403), recurso ausente (404), conflicto (409), tamaño (413), formato (415), contenido no procesable (422) y cuota (429).
+- 5xx: fallo interno (500), proveedor externo (502), servicio no disponible (503) o tiempo de espera (504).
+
+Las respuestas de error del backend incluyen error, status y code; la validación también incluye details. Los errores inesperados no exponen datos internos en la respuesta al usuario.
