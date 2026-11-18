@@ -43,7 +43,7 @@ Desde cualquiera de esas dos carpetas puedes ejecutar `npm run setup`: instala l
 
 ## Historial de migraciones
 
-La migración `002_conversations_and_tracking.sql` se publicó con dos revisiones distintas en los commits `2de8aa9` y `5b07875`. El ejecutor reconoce exclusivamente ese par exacto de checksums y conserva el checksum registrado en la base de datos. Cualquier otra modificación sigue bloqueando la migración.
+La migración `002_conversations_and_tracking.sql` se publicó con dos revisiones distintas en los commits `2de8aa9` y `5b07875`. El ejecutor reconoce exclusivamente esas dos revisiones publicadas, tanto en LF como en CRLF de Windows, y conserva el checksum registrado en la base de datos. Cualquier otra modificación sigue bloqueando la migración.
 
 El ajuste de integridad se aplica mediante la nueva migración `008_conversation_owner_integrity.sql`. No se eliminan ni se reasignan conversaciones o mensajes. Si hay datos que incumplen la propiedad de una conversación, MySQL rechaza el ajuste y se debe revisar ese dato antes de continuar.
 
@@ -67,3 +67,5 @@ Sharp carga una DLL que Windows puede mantener bloqueada mientras el backend est
 Si el problema continúa después del reinicio, revisa permisos y los avisos de protección del sistema. No borres el lockfile ni desactives el antivirus. El instalador mantiene el error original y devuelve un código de fallo; no finaliza otros procesos automáticamente.
 
 `setup`, `db:migrate`, `db:status` y `db:photos` también se pueden ejecutar desde `frontend`.
+
+La comparación de checksums tolera únicamente la diferencia de saltos de línea LF/CRLF. Los nuevos registros usan LF; los registros existentes no se reescriben. Los cambios reales en el SQL siguen deteniendo la migración. `.gitattributes` fija los archivos SQL en LF para futuros checkouts.
