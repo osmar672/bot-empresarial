@@ -1,7 +1,7 @@
 import AttendanceSession from './AttendanceSession.jsx';
 import JustificationModal from './JustificationModal.jsx';
 import { useEffect, useState } from 'react';
-import { Clock3, RefreshCw, FileText, CheckCircle2, AlertTriangle, AlertCircle, HelpCircle } from 'lucide-react';
+import { Clock3, RefreshCw, FileText, SlidersHorizontal, CheckCircle2, AlertTriangle, AlertCircle, HelpCircle } from 'lucide-react';
 import { useAttendance, attendanceDate } from '../context/AttendanceContext.jsx';
 import { api } from '../services/api.js';
 import { Notice, Spinner } from './UI.jsx';
@@ -37,8 +37,9 @@ export const STATUS_LABELS = {
   jornada_incompleta: { label: 'Jornada incompleta', cls: 'status-jornada_incompleta' }
 };
 
-export default function AttendanceCard() {
+export default function AttendanceCard({ onCorrection, correcting, correctionForm }) {
   const { data, loading, busy, error, success, mark, retry } = useAttendance();
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [filters, setFilters] = useState({});
   const [history, setHistory] = useState(null);
   const [historyError, setHistoryError] = useState(null);
@@ -65,15 +66,14 @@ export default function AttendanceCard() {
     e.preventDefault();
     setPage(1);
     setFilters(Object.fromEntries([...new FormData(e.currentTarget)].filter(([, value]) => value)));
+    setFiltersOpen(false);
   }
 
   return (
     <section className="card attendance-card">
       <div className="section-heading">
         <div>
-          <div className="eyebrow">MI JORNADA</div>
           <h2>Entradas y salidas</h2>
-          <p>Marca al empezar y al terminar. Consulta cualquier fecha · Hora de Costa Rica</p>
         </div>
         <span className={'attendance-badge ' + (data?.openEntry ? 'attendance-badge-open' : '')}>
           <Clock3 size={13} />
@@ -97,9 +97,15 @@ export default function AttendanceCard() {
           <div className="attendance-history-heading">
             <div className="history-heading-title">
               <h3>Historial de marcaciones</h3>
-              <p className="fineprint">Registros persistentes en MySQL con verificación de puntualidad según horario laboral.</p>
             </div>
             <div className="history-heading-actions">
+              <button className="btn btn-secondary btn-sm" aria-expanded={filtersOpen}
+                aria-controls="attendance-filters" onClick={() => setFiltersOpen(value => !value)}>
+                <SlidersHorizontal size={14} /> Filtrar{Object.keys(filters).length > 0 && " (activo)"}
+              </button>
+              {onCorrection && <button className="btn btn-secondary btn-sm" onClick={onCorrection} aria-expanded={correcting} aria-controls="workday-correction">
+                {correcting ? "Cerrar corrección" : "Corregir marcación"}
+              </button>}
               <button
                 className="btn btn-secondary btn-sm"
                 onClick={() => setJustifyingEntry({})}
@@ -119,7 +125,7 @@ export default function AttendanceCard() {
             </div>
           </div>
 
-          <form className="attendance-filters" onSubmit={search}>
+          <form id="attendance-filters" className="attendance-filters" hidden={!filtersOpen} onSubmit={search}>
             <label className="field">
               Desde
               <input type="date" name="from" />
@@ -149,8 +155,14 @@ export default function AttendanceCard() {
             <button className="btn btn-secondary" disabled={fetching}>
               Buscar historial
             </button>
+            {Object.keys(filters).length > 0 && <button className="text-button" type="button" onClick={event => {
+              event.currentTarget.form.reset();
+              setPage(1);
+              setFilters({});
+            }}>Quitar filtros</button>}
           </form>
 
+          {onCorrection && <div id="workday-correction">{correctionForm}</div>}
           <Notice error={historyError} />
 
           {fetching ? (

@@ -1,3 +1,4 @@
+import '../styles/workspace.css';
 import '../styles/workflows.css';
 import '../styles/people-tools.css';
 import { AccountLinkAction } from "../components/AuthRecovery.jsx";
@@ -6,7 +7,7 @@ import { AttendanceProvider } from "../context/AttendanceContext.jsx";
 import { useState, useEffect, lazy, Suspense } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { Spinner } from "../components/UI.jsx";
-import Shell from "../components/Shell.jsx";
+import Shell, { Administration } from "../components/Shell.jsx";
 import Login from "../pages/Login.jsx";
 import Chat from "../pages/Chat.jsx";
 import Documents from "../pages/Documents.jsx";
@@ -20,6 +21,8 @@ const Calendar = lazy(() => import("../pages/Calendar.jsx"));
 const Audit = lazy(() => import("../pages/Audit.jsx"));
 const Security = lazy(() => import("../pages/Security.jsx"));
 const HRRequests = lazy(() => import("../pages/HRRequests.jsx"));
+const Workday = lazy(() => import("../pages/Workday.jsx"));
+const Requests = lazy(() => import("../pages/Requests.jsx"));
 const Profile = lazy(() => import("../pages/Profile.jsx"));
 export default function App() {
   const { loading, session } = useAuth(),
@@ -80,8 +83,14 @@ export default function App() {
       <Audit />
     ) : tab === "hr" && isHR ? (
       <HRRequests />
+    ) : tab === "administration" && isHR ? (
+      <Administration role={session.user.role} onNavigate={setTab} />
+    ) : tab === "attendance" ? (
+      <Workday onRequests={() => setTab("requests")} />
+    ) : tab === "requests" ? (
+      <Requests />
     ) : tab === "profile" ? (
-      <Profile />
+      <Profile onRequests={() => setTab("requests")} />
     ) : tab === "documents" ? (
       <Documents />
     ) : tab === "users" && session.user.role === "admin" ? (
