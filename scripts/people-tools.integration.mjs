@@ -1,3 +1,4 @@
+import { mailConfiguration } from "../backend/src/services/mailTransport.js";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
@@ -7,9 +8,9 @@ import app from "../backend/src/app.js";
 import { pool, run, one, many } from "../backend/src/db/pool.js";
 import { ensurePeopleTools } from "../backend/src/db/bootstrapPeopleTools.js";
 import { countWorkingDays } from "../backend/src/services/leaveBalance.service.js";
-if (process.env.RESEND_API_KEY)
+if (mailConfiguration().configured)
   throw new Error(
-    "Run with RESEND_API_KEY unset; test fixtures must not send mail.",
+    "Run with mail delivery disabled; test fixtures must not send mail.",
   );
 await ensurePeopleTools();
 const company = randomUUID(),

@@ -1,10 +1,11 @@
+import { mailConfiguration } from "../backend/src/services/mailTransport.js";
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import app from '../backend/src/app.js';
 import {one,run,pool} from '../backend/src/db/pool.js';
 import {queueWelcome,sendPendingMail} from '../backend/src/services/mail.service.js';
 // This suite must never dispatch real email.
-if(process.env.RESEND_API_KEY)throw new Error('Run workforce tests with RESEND_API_KEY unset to avoid external delivery.');
+if(mailConfiguration().configured)throw new Error('Run workforce tests with mail delivery disabled to avoid external delivery.');
 const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));const base=`http://127.0.0.1:${server.address().port}/api`,tenants=[];
 async function req(path,method='GET',body,cookie){const headers={};if(cookie)headers.cookie=cookie;if(body)headers['Content-Type']='application/json';const response=await fetch(base+path,{method,headers,body:body?JSON.stringify(body):undefined});return {status:response.status,data:await response.json(),cookie:response.headers.get('set-cookie')?.split(';')[0]};}
 async function signup(){const result=await req('/auth/register','POST',{name:'Workforce admin',companyName:'Workforce '+randomUUID(),email:randomUUID()+'@example.test',password:'SecureTest2026!'});assert.equal(result.status,201);tenants.push(result.data.company.id);assert.equal(result.data.welcomeEmail.status,'pending_configuration');return result;}
@@ -30,8 +31,8 @@ try{
  let deliveries=0;assert.equal((await sendPendingMail(mail.id,{send:async message=>{deliveries++;assert.equal(message.recipient,worker.email);}})).status,'sent');assert.equal((await sendPendingMail(mail.id,{send:async()=>{deliveries++;}})).status,'sent');assert.equal(deliveries,1);
  const failed=await one('SELECT id FROM pb_mail_outbox WHERE user_id=?',[hr.id]);assert.equal((await sendPendingMail(failed.id,{send:async()=>{throw new Error('private provider token');}})).status,'pending');const stored=await one('SELECT state,last_error,attempts FROM pb_mail_outbox WHERE id=?',[failed.id]);assert.equal(stored.last_error,'MAIL_DELIVERY_FAILED');assert.equal(stored.attempts,1);
  const transportMail=await one('SELECT id,recipient FROM pb_mail_outbox WHERE user_id=?',[other.data.user.id]);
- const savedFetch=globalThis.fetch,savedKey=process.env.RESEND_API_KEY,savedFrom=process.env.MAIL_FROM;let captured;
- try{process.env.RESEND_API_KEY='test-only-mail-key';process.env.MAIL_FROM='Luma <welcome@example.test>';globalThis.fetch=async(url,options)=>{captured={url,options};return new Response(JSON.stringify({id:'test-provider-receipt'}),{status:200,headers:{'Content-Type':'application/json'}});};assert.equal((await sendPendingMail(transportMail.id)).status,'sent');assert.equal(captured.url,'https://api.resend.com/emails');assert.equal(captured.options.headers['Idempotency-Key'],'luma-welcome-'+transportMail.id);assert.equal(JSON.parse(captured.options.body).to[0],transportMail.recipient);}
- finally{globalThis.fetch=savedFetch;if(savedKey===undefined)delete process.env.RESEND_API_KEY;else process.env.RESEND_API_KEY=savedKey;if(savedFrom===undefined)delete process.env.MAIL_FROM;else process.env.MAIL_FROM=savedFrom;}
+ const savedFetch=globalThis.fetch,savedProvider=process.env.MAIL_PROVIDER,savedKey=process.env.RESEND_API_KEY,savedFrom=process.env.MAIL_FROM;let captured;
+ try{process.env.MAIL_PROVIDER='resend';process.env.RESEND_API_KEY='test-only-mail-key';process.env.MAIL_FROM='Luma <welcome@example.test>';globalThis.fetch=async(url,options)=>{captured={url,options};return new Response(JSON.stringify({id:'test-provider-receipt'}),{status:200,headers:{'Content-Type':'application/json'}});};assert.equal((await sendPendingMail(transportMail.id)).status,'sent');assert.equal(captured.url,'https://api.resend.com/emails');assert.equal(captured.options.headers['Idempotency-Key'],'luma-welcome-'+transportMail.id);assert.equal(JSON.parse(captured.options.body).to[0],transportMail.recipient);}
+ finally{globalThis.fetch=savedFetch;if(savedProvider===undefined)delete process.env.MAIL_PROVIDER;else process.env.MAIL_PROVIDER=savedProvider;if(savedKey===undefined)delete process.env.RESEND_API_KEY;else process.env.RESEND_API_KEY=savedKey;if(savedFrom===undefined)delete process.env.MAIL_FROM;else process.env.MAIL_FROM=savedFrom;}
  console.log('PASS: local weekday/date history, private employee data, vacation validation/overlap, RH decisions and self-review protection, durable welcome email for registration/creation, single delivery and retry without leaked secrets.');
 }finally{for(const id of tenants){await run('DELETE FROM pb_messages WHERE company_id=?',[id]);await run('DELETE FROM pb_companies WHERE id=?',[id]);}await new Promise(r=>server.close(r));await pool.end();}

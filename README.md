@@ -1,5 +1,7 @@
 ## Inicio de sesión con Google
 
+Consulta [Configurar Google y Gmail](docs/GOOGLE_Y_GMAIL.md) para preparar el acceso con Google, Drive y el envío de correo desde Gmail.
+
 El botón de Google y la verificación del backend están implementados. Configura `GOOGLE_CLIENT_ID`, aplica las migraciones y consulta [la guía de configuración](docs/LOGIN_GOOGLE.md). Solo acceden usuarios ya registrados; conservan empresa y rol.
 
 ## Roles y conversaciones persistentes
@@ -189,7 +191,7 @@ Consulta `docs/PRUEBAS_DE_ACEPTACION.md` para las siete pruebas del PDF y `docs/
 - Los embeddings JSON se puntúan en el proceso Node (búsqueda exacta), no con un índice vectorial dentro de MySQL. Funciona para volúmenes reducidos; para miles de documentos requiere una implementación de búsqueda vectorial indexada.
 - OCR local para páginas escaneadas en español e inglés. La precisión depende de la calidad del escaneo; revisar cifras y originales.
 - Sin panel de propietario de plataforma para cobros. Planes `gratis`/`pro` y cuotas **sí** están implementados, sin integración de pagos.
-- Correo de bienvenida, verificación y recuperación disponibles al configurar Resend y un remitente verificado. Sin configuración, los mensajes permanecen pendientes.
+- Correo de bienvenida, verificación y recuperación disponibles al configurar Gmail o Resend. Sin configuración, los mensajes permanecen pendientes.
 - La sincronización periódica usa un proceso cron en el servidor y no una cola distribuida.
 - El modo local de hashing recupera principalmente términos coincidentes. Para demostrar RAG semántico completo usa Voyage.
 
