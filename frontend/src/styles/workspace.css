@@ -83,22 +83,6 @@
   background: #f4eefb;
 }
 
-.workspace-tool-list {
-  display: grid;
-  gap: 8px;
-  max-width: 490px;
-}
-
-.workspace-tool-list > button {
-  min-height: 48px;
-  justify-content: flex-start;
-  text-align: left;
-}
-
-.workspace-tool-list > button > svg:last-child {
-  margin-left: auto;
-}
-
 .workspace-page .history-heading-actions {
   flex-wrap: wrap;
 }
