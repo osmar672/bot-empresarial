@@ -3,6 +3,7 @@ import Onboarding from '../components/Onboarding.jsx';
 import PermissionRequests from '../components/PermissionRequests.jsx';
 import LeavePolicy from '../components/LeavePolicy.jsx';
 import HRDashboard from "../components/HRDashboard.jsx";
+import HRAttendancePanel from "../components/HRAttendancePanel.jsx";
 import { useEffect, useState } from "react";
 import { api, HTTP_STATUS } from "../services/api.js";
 import { Notice, Spinner } from "../components/UI.jsx";
@@ -73,9 +74,9 @@ export default function HRRequests() {
         >
           Solicitudes de vacaciones
         </button>
-        <button className={tab==="permissions"?"active":""} onClick={()=>setTab("permissions")}>Permisos por horas</button><button className={tab==="policy"?"active":""} onClick={()=>setTab("policy")}>Reglas y saldos</button>
+        <button className={tab==="permissions"?"active":""} onClick={()=>setTab("permissions")}>Permisos por horas</button><button className={tab==="policy"?"active":""} onClick={()=>setTab("policy")}>Reglas y saldos</button><button className={tab==="attendance"?"active":""} onClick={()=>setTab("attendance")}>Asistencia y justificaciones</button>
       </div>
-      {tab==='inbox'?<HRInbox/>:tab==='onboarding'?<Onboarding review/>:tab === "policy" ? <LeavePolicy/> : tab === "permissions" ? <PermissionRequests review/> : tab === "dashboard" ? (
+      {tab==='inbox'?<HRInbox/>:tab==='onboarding'?<Onboarding review/>:tab === "policy" ? <LeavePolicy/> : tab === "permissions" ? <PermissionRequests review/> : tab === "attendance" ? <HRAttendancePanel/> : tab === "dashboard" ? (
         <HRDashboard />
       ) : (
         <>
