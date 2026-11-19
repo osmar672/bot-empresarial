@@ -7,8 +7,6 @@ import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {
-  Mic,
-  MicOff,
   AudioLines,
   Volume2,
   Square,
@@ -17,7 +15,6 @@ import {
   ArrowUp,
   Copy,
   Check,
-  ChevronDown,
   FileText,
   MessageSquare,
   MessageSquareText,
@@ -56,6 +53,8 @@ export default function Chat({onDocuments}){
  useEffect(()=>{let ignore=false;api('/chat/conversations').then(data=>{if(!ignore){setThreads(data.conversations);const id=data.conversations[0]?.id||'';setConversationId(id);if(id)loadHistory(id);else setLoading(false);}}).catch(e=>{if(!ignore){setError(e);setLoading(false);}});return()=>{ignore=true;controller.current?.abort();};},[]);
  useLayoutEffect(()=>{
   const element=feed.current;if(!element||loading)return;
+  // The empty welcome screen starts at the top, even when account notices reduce its height.
+  if(!messages.length){element.scrollTop=0;followTail.current=true;setShowJump(false);return;}
   if(restoreScroll.current){const previous=restoreScroll.current;element.scrollTop=previous.top+element.scrollHeight-previous.height;restoreScroll.current=null;}
   else if(followTail.current){element.scrollTop=element.scrollHeight;setShowJump(false);}
  },[messages,busy,loading]);
@@ -91,7 +90,6 @@ export default function Chat({onDocuments}){
        <div className="messages">{messages.map(m=><article key={m.id} className={'message '+(m.role==='user'?'message-user':'message-bot')} aria-label={m.role==='user'?'Tu mensaje':'Respuesta de Luma'}><div className="message-main">
         <div className="message-content">{m.text?(m.role==='assistant'?<Markdown remarkPlugins={[remarkGfm]} components={{a:({href,children})=><a href={href} target="_blank" rel="noopener noreferrer">{children}</a>}}>{m.text}</Markdown>:m.text):<span className="typing" aria-label="Preparando respuesta"><i/><i/><i/></span>}</div>
         {m.role==='assistant'&&m.text&&<footer className="answer-tools"><button className="read-answer" aria-label={voice.speaking&&voice.readingId===m.id?'Detener lectura':'Escuchar respuesta'} title={voice.speaking&&voice.readingId===m.id?'Detener lectura':'Escuchar respuesta'} onClick={()=>{if(voice.speaking&&voice.readingId===m.id)voice.stopAll();else voice.speak(m.text,m.id);}}>{voice.speaking&&voice.readingId===m.id?<Square size={14}/>:<Volume2 size={15}/>}</button>
-         {m.sources?.length>0&&<details className="sources"><summary><FileText size={13}/><span>{m.sources.length} {m.sources.length===1?'fuente':'fuentes'}</span><ChevronDown size={13}/></summary><div className="source-list">{m.sources.map((source,i)=>source.url?<a key={i} href={source.url} target="_blank" rel="noreferrer noopener" className="source-pill"><span className="source-index">{source.id}</span><span>{source.name}</span><ArrowUpRight size={13}/></a>:<span key={i} className="source-pill"><span className="source-index">{source.id}</span><span>{source.name}</span></span>)}</div></details>}
          <button className="copy-answer" aria-label={copied===m.id?'Respuesta copiada':'Copiar respuesta'} title={copied===m.id?'Copiado':'Copiar respuesta'} onClick={()=>copy(m)}>{copied===m.id?<Check size={15}/>:<Copy size={15}/>}<span>{copied===m.id?'Copiado':'Copiar'}</span></button>
         </footer>}
        </div></article>)}<div ref={messagesEnd}/></div>}
@@ -100,7 +98,7 @@ export default function Chat({onDocuments}){
     </div>
     <div className="chat-compose">{(messages.length>0||loading||idlePrompt||voice.listening||voice.speaking)&&<PenguinMascot idlePrompt={idlePrompt} state={voice.listening?'hearing':voice.speaking?'speaking':busy?activity:question.trim()?'listening':error?'error':loading?'loading':activity}/>}<Notice error={error} success={success} onClose={()=>{setError('');setSuccess(null);}}/>
      {(voice.listening||voice.speaking||voice.voiceMode)&&<div className="voice-session" role="status"><div className={'voice-wave '+(voice.listening?'voice-wave-active':'')} aria-hidden="true"><i/><i/><i/><i/><i/></div><div><strong>{voice.listening?'Escuchando…':voice.speaking?'Luma está hablando…':busy?'Preparando tu respuesta…':'Modo de voz activo'}</strong><p>{voice.transcript||'La voz se transcribe con el servicio de tu navegador.'}</p></div><button className="icon-button" aria-label="Cerrar modo de voz" onClick={voice.stopAll}><X size={17}/></button></div>}<div className="compose-box"><textarea ref={input} rows="1" maxLength="2000" disabled={busy} value={question} onChange={e=>setQuestion(e.target.value)} onKeyDown={handleKey} placeholder="Escribe tu pregunta…" aria-label="Escribe tu pregunta"/>
-      <div className="compose-controls"><span><FileText size={13}/> Documentos de tu empresa</span><div className="composer-voice-actions"><button className={'voice-button '+(voice.listening?'voice-button-recording':'')} type="button" aria-label={voice.listening?'Terminar dictado':'Dictar pregunta'} aria-pressed={voice.listening} title={voice.listening?'Terminar dictado':'Dictar pregunta'} disabled={busy} onClick={()=>{setError('');voice.startDictation();}}>{voice.listening?<MicOff size={19}/>:<Mic size={19}/>}</button><button className={'voice-button voice-mode-button '+(voice.voiceMode?'voice-mode-active':'')} type="button" aria-label={voice.voiceMode?'Desactivar conversación por voz':'Iniciar conversación por voz'} aria-pressed={voice.voiceMode} title={voice.voiceMode?'Salir del modo de voz':'Conversar por voz'} disabled={busy&&!voice.voiceMode} onClick={()=>{setError('');voice.toggleVoiceMode();}}><AudioLines size={19}/></button>{busy?<button className="send-button" type="button" aria-label="Detener respuesta" onClick={()=>controller.current?.abort()}>■</button>:<button className="send-button" type="button" aria-label="Enviar pregunta" disabled={!question.trim()} onClick={()=>send()}><ArrowUp size={19}/></button>}</div></div>
+      <div className="compose-controls"><span><FileText size={13}/> Documentos de tu empresa</span><div className="composer-voice-actions"><button className={'voice-button voice-mode-button '+(voice.voiceMode?'voice-mode-active':'')} type="button" aria-label={voice.voiceMode?'Desactivar conversación por voz':'Iniciar conversación por voz'} aria-pressed={voice.voiceMode} title={voice.voiceMode?'Salir del modo de voz':'Conversar por voz'} disabled={busy&&!voice.voiceMode} onClick={()=>{setError('');voice.toggleVoiceMode();}}><AudioLines size={19}/></button>{busy?<button className="send-button" type="button" aria-label="Detener respuesta" onClick={()=>controller.current?.abort()}>■</button>:<button className="send-button" type="button" aria-label="Enviar pregunta" disabled={!question.trim()} onClick={()=>send()}><ArrowUp size={19}/></button>}</div></div>
      </div>
      <div className="compose-hint">Verifica las fuentes. Las respuestas pueden contener errores.</div>
     </div>

@@ -1,0 +1,2 @@
+# Keep migration SQL identical across Windows and Linux checkouts.
+*.sql text eol=lf

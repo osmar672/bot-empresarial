@@ -31,6 +31,40 @@ export const ATTENDANCE_STATUSES = {
 export const canReview = role => role === 'admin' || role === 'rrhh' || role.startsWith('rrhh_');
 
 /**
+ * Valida la firma binaria real (magic bytes) de un comprobante subido (PDF, PNG, JPG/JPEG).
+ */
+export async function validateFileSignature(filePath, originalName) {
+  const ext = path.extname(originalName || '').toLowerCase();
+  const handle = await fs.open(filePath, 'r');
+  try {
+    const buf = Buffer.alloc(8);
+    const { bytesRead } = await handle.read(buf, 0, 8, 0);
+    if (bytesRead < 4) {
+      throw new HttpError(415, 'El archivo adjunto está vacío o dañado.');
+    }
+
+    const isPdf = buf.slice(0, 5).toString('ascii') === '%PDF-';
+    const isPng =
+      buf[0] === 0x89 &&
+      buf[1] === 0x50 &&
+      buf[2] === 0x4e &&
+      buf[3] === 0x47;
+    const isJpeg = buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff;
+
+    if (ext === '.pdf' && isPdf) return 'application/pdf';
+    if (ext === '.png' && isPng) return 'image/png';
+    if ((ext === '.jpg' || ext === '.jpeg') && isJpeg) return 'image/jpeg';
+
+    throw new HttpError(
+      415,
+      'El contenido real del archivo no coincide con un formato válido (PDF, PNG, JPG o JPEG).'
+    );
+  } finally {
+    await handle.close();
+  }
+}
+
+/**
  * Obtiene fecha y hora actual en Costa Rica y día de la semana (1=Lunes .. 7=Domingo).
  */
 export function getCostaRicaDateParts(date = new Date()) {
@@ -147,6 +181,23 @@ export async function logAttendanceAudit({
 }
 
 /**
+ * Consulta el historial de auditoría y decisiones de la empresa.
+ */
+export async function getAttendanceAuditLog(companyId, { limit = 50 } = {}) {
+  const logs = await many(
+    `SELECT a.id, a.action, a.entity_type, a.entity_id, a.previous_value, a.new_value,
+            a.reason, a.created_at, u.name AS actor_name, u.email AS actor_email, u.role AS actor_role
+     FROM pb_attendance_audit a
+     JOIN pb_users u ON u.id = a.actor_user_id
+     WHERE a.company_id = ?
+     ORDER BY a.created_at DESC
+     LIMIT ?`,
+    [companyId, Number(limit)]
+  );
+  return { logs };
+}
+
+/**
  * Consulta el horario programado para un usuario en una fecha específica (o hoy).
  */
 export async function getUserScheduleForDate(companyId, userId, date = new Date()) {
@@ -182,7 +233,7 @@ export async function checkInEmployee(req) {
     if (!users.length) throw new HttpError(401, 'Usuario no encontrado');
 
     const [open] = await cx.execute(
-      'SELECT id FROM pb_attendance WHERE company_id = ? AND user_id = ? AND checked_out_at IS NULL FOR UPDATE',
+      'SELECT id FROM pb_attendance WHERE company_id = ? AND user_id = ? AND checked_in_at IS NOT NULL AND checked_out_at IS NULL FOR UPDATE',
       [companyId, userId]
     );
     if (open.length) {
@@ -273,7 +324,7 @@ export async function checkOutEmployee(req, entryId = null) {
     if (!users.length) throw new HttpError(401, 'Usuario no encontrado');
 
     const [open] = await cx.execute(
-      'SELECT id, checked_in_at, work_date FROM pb_attendance WHERE company_id = ? AND user_id = ? AND checked_out_at IS NULL FOR UPDATE',
+      'SELECT id, checked_in_at, work_date FROM pb_attendance WHERE company_id = ? AND user_id = ? AND checked_in_at IS NOT NULL AND checked_out_at IS NULL FOR UPDATE',
       [companyId, userId]
     );
     if (!open.length) {
@@ -306,7 +357,7 @@ export async function checkOutEmployee(req, entryId = null) {
  */
 export async function getAttendanceCurrentState(companyId, userId) {
   const params = [companyId, userId];
-  const { dateStr, dayOfWeek } = getCostaRicaDateParts();
+  const { dayOfWeek } = getCostaRicaDateParts();
 
   const [openEntry, entries, clock, schedule, settings] = await Promise.all([
     one(
@@ -314,7 +365,7 @@ export async function getAttendanceCurrentState(companyId, userId) {
               a.punctuality_status, a.attendance_status, s.shift_name
        FROM pb_attendance a
        LEFT JOIN pb_work_schedules s ON s.id = a.schedule_id
-       WHERE a.company_id = ? AND a.user_id = ? AND a.checked_out_at IS NULL`,
+       WHERE a.company_id = ? AND a.user_id = ? AND a.checked_in_at IS NOT NULL AND a.checked_out_at IS NULL`,
       params
     ),
     many(
@@ -325,7 +376,7 @@ export async function getAttendanceCurrentState(companyId, userId) {
               s.shift_name
        FROM pb_attendance a
        LEFT JOIN pb_work_schedules s ON s.id = a.schedule_id
-       WHERE a.company_id = ? AND a.user_id = ?
+       WHERE a.company_id = ? AND a.user_id = ? AND a.checked_in_at IS NOT NULL
        ORDER BY a.checked_in_at DESC, a.id DESC
        LIMIT 30`,
       params
@@ -436,6 +487,11 @@ export async function submitJustification({
   comments = null,
   file = null
 }) {
+  let verifiedMime = null;
+  if (file) {
+    verifiedMime = await validateFileSignature(file.path, file.originalname);
+  }
+
   return transaction(async cx => {
     let attendance = null;
     if (attendanceId) {
@@ -445,6 +501,39 @@ export async function submitJustification({
       );
       if (!rows.length) throw new HttpError(404, 'Marcación de asistencia no encontrada');
       attendance = rows[0];
+    } else if (incidentDate) {
+      // Si no se especificó attendanceId, buscar si existe una marcación o ausencia en esa fecha
+      const [rows] = await cx.execute(
+        `SELECT id, attendance_status, punctuality_status
+         FROM pb_attendance
+         WHERE company_id = ? AND user_id = ? AND (
+           work_date = ? OR DATE(DATE_SUB(checked_in_at, INTERVAL 6 HOUR)) = ?
+         )
+         ORDER BY created_at DESC LIMIT 1 FOR UPDATE`,
+        [companyId, userId, incidentDate, incidentDate]
+      );
+      if (rows.length) {
+        attendance = rows[0];
+      } else {
+        // Crear registro de jornada asociada en estado justificacion_pendiente para trazabilidad
+        const dateObj = new Date(incidentDate + 'T12:00:00Z');
+        const { dayOfWeek } = getCostaRicaDateParts(dateObj);
+        const [schedRows] = await cx.execute(
+          'SELECT id, start_time, end_time FROM pb_work_schedules WHERE company_id = ? AND user_id = ? AND day_of_week = ?',
+          [companyId, userId, dayOfWeek]
+        );
+        const sched = schedRows[0] || null;
+        const newAttId = randomUUID();
+        await cx.execute(
+          `INSERT INTO pb_attendance (
+             id, company_id, user_id, checked_in_at, checked_out_at,
+             work_date, schedule_id, scheduled_start_time, scheduled_end_time,
+             punctuality_status, attendance_status, created_at
+           ) VALUES (?, ?, ?, NULL, NULL, ?, ?, ?, ?, 'no_aplica', 'justificacion_pendiente', UTC_TIMESTAMP(3))`,
+          [newAttId, companyId, userId, incidentDate, sched?.id || null, sched?.start_time || null, sched?.end_time || null]
+        );
+        attendance = { id: newAttId, attendance_status: 'justificacion_pendiente', punctuality_status: 'no_aplica' };
+      }
     }
 
     const id = randomUUID();
@@ -455,7 +544,7 @@ export async function submitJustification({
 
     if (file) {
       docOriginalName = path.basename(file.originalname).slice(0, 255);
-      docMime = file.mimetype;
+      docMime = verifiedMime || file.mimetype;
       docSize = file.size;
       const stored = `${randomUUID()}${path.extname(docOriginalName).toLowerCase()}`;
       const dir = path.join(env.backendDir, 'uploads', 'justifications');
@@ -476,7 +565,7 @@ export async function submitJustification({
         id,
         companyId,
         userId,
-        attendanceId || null,
+        attendance?.id || null,
         incidentType,
         incidentDate,
         incidentTime || null,
@@ -492,8 +581,7 @@ export async function submitJustification({
       ]
     );
 
-    // Si se vinculó a una marcación existente, actualizar estado a 'justificacion_pendiente'
-    if (attendance) {
+    if (attendance && attendance.attendance_status !== 'justificacion_pendiente') {
       await cx.execute(
         `UPDATE pb_attendance
          SET attendance_status = 'justificacion_pendiente', updated_at = UTC_TIMESTAMP(3)
@@ -502,12 +590,26 @@ export async function submitJustification({
       );
     }
 
-    return { ok: true, id, status: 'pending' };
+    await cx.execute(
+      `INSERT INTO pb_attendance_audit (id, company_id, actor_user_id, action, entity_type, entity_id, previous_value, new_value, reason, created_at)
+       VALUES (?, ?, ?, 'submit_justification', 'pb_attendance_justifications', ?, ?, ?, ?, UTC_TIMESTAMP(3))`,
+      [
+        randomUUID(),
+        companyId,
+        userId,
+        id,
+        attendance ? JSON.stringify({ attendance_status: attendance.attendance_status }) : null,
+        JSON.stringify({ status: 'pending', incidentType, incidentDate, hasDocument: !!docPath }),
+        description.slice(0, 500)
+      ]
+    );
+
+    return { ok: true, id, attendanceId: attendance?.id || null, status: 'pending' };
   });
 }
 
 /**
- * Revisa una justificación (aprobar o rechazar). Solo personal de Recursos Humanos o Administración.
+ * Revisa una justificación (aprobar, rechazar o solicitar información). Solo personal de RRHH o Administración.
  */
 export async function reviewJustification({
   companyId,
@@ -527,7 +629,7 @@ export async function reviewJustification({
   return transaction(async cx => {
     const [rows] = await cx.execute(
       `SELECT j.id, j.user_id, j.attendance_id, j.status, j.incident_type,
-              a.punctuality_status, a.attendance_status
+              a.checked_in_at, a.punctuality_status, a.attendance_status
        FROM pb_attendance_justifications j
        LEFT JOIN pb_attendance a ON a.id = j.attendance_id
        WHERE j.id = ? AND j.company_id = ? FOR UPDATE`,
@@ -552,21 +654,26 @@ export async function reviewJustification({
     // Actualizar situación administrativa de la asistencia vinculada si existe
     if (just.attendance_id) {
       let newAttendanceStatus = just.attendance_status;
+      const isAbsence = !just.checked_in_at;
 
       if (status === 'approved') {
-        if (just.punctuality_status === 'tarde' || just.attendance_status === 'tarde' || just.attendance_status === 'justificacion_pendiente') {
-          newAttendanceStatus = 'tarde_justificada';
-        } else if (just.attendance_status === 'ausencia') {
+        if (isAbsence) {
           newAttendanceStatus = 'ausencia_justificada';
+        } else if (just.punctuality_status === 'tarde' || just.attendance_status === 'tarde' || just.attendance_status === 'justificacion_pendiente') {
+          newAttendanceStatus = 'tarde_justificada';
         } else {
           newAttendanceStatus = 'a_tiempo';
         }
       } else if (status === 'rejected') {
-        if (just.punctuality_status === 'tarde') {
+        if (isAbsence) {
+          newAttendanceStatus = 'ausencia';
+        } else if (just.punctuality_status === 'tarde') {
           newAttendanceStatus = 'tarde';
-        } else if (just.attendance_status === 'justificacion_pendiente') {
-          newAttendanceStatus = just.punctuality_status === 'tarde' ? 'tarde' : 'ausencia';
+        } else {
+          newAttendanceStatus = 'a_tiempo';
         }
+      } else if (status === 'info_required') {
+        newAttendanceStatus = 'justificacion_pendiente';
       }
 
       await cx.execute(
@@ -583,7 +690,7 @@ export async function reviewJustification({
       action: `review_justification_${status}`,
       entityType: 'pb_attendance_justifications',
       entityId: justificationId,
-      previousValue: { status: just.status },
+      previousValue: { status: just.status, attendance_status: just.attendance_status },
       newValue: { status, reviewComment },
       reason: reviewComment || `Justificación ${status}`
     });
@@ -683,6 +790,7 @@ export async function getCompanyAttendanceDashboard(companyId, {
             s.shift_name,
             j.id AS justification_id, j.status AS justification_status,
             j.incident_type, j.description AS justification_description,
+            j.comments AS justification_comments,
             j.document_path, j.document_original_name,
             j.review_comment, j.reviewed_at,
             rev.name AS reviewer_name
@@ -708,12 +816,16 @@ export async function getCompanyAttendanceDashboard(companyId, {
 }
 
 /**
- * Consulta solicitudes de justificaciones de toda la empresa para revisión.
+ * Consulta solicitudes de justificaciones de la empresa (o de un usuario específico).
  */
-export async function getCompanyJustifications(companyId, { status, page = 1, limit = 50 }) {
+export async function getCompanyJustifications(companyId, { status, userId, page = 1, limit = 50 } = {}) {
   const clauses = ['j.company_id = ?'];
   const params = [companyId];
 
+  if (userId) {
+    clauses.push('j.user_id = ?');
+    params.push(userId);
+  }
   if (status) {
     clauses.push('j.status = ?');
     params.push(status);

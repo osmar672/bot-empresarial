@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   Users, Calendar, Clock, CheckCircle2, AlertTriangle, AlertCircle,
-  FileText, Download, ShieldCheck, RefreshCw, Search, X
+  FileText, Download, ShieldCheck, RefreshCw, Search, X, HelpCircle
 } from 'lucide-react';
 import { api, HTTP_STATUS } from '../services/api.js';
 import { Notice, Spinner } from '../components/UI.jsx';
@@ -33,7 +33,7 @@ function duration(seconds) {
 
 export default function HRRequests() {
   const { session } = useAuth();
-  const [currentTab, setCurrentTab] = useState('attendance'); // 'attendance' | 'vacations'
+  const [currentTab, setCurrentTab] = useState('attendance'); // 'attendance' | 'vacations' | 'audit'
 
   // --- Estado para Vacaciones ---
   const [vacationRequests, setVacationRequests] = useState([]);
@@ -46,7 +46,12 @@ export default function HRRequests() {
   const [attFilters, setAttFilters] = useState({});
   const [attPage, setAttPage] = useState(1);
   const [reviewingJustification, setReviewingJustification] = useState(null);
+  const [reviewComment, setReviewComment] = useState('');
   const [tolerance, setTolerance] = useState(0);
+
+  // --- Estado para Auditoría ---
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [auditLoading, setAuditLoading] = useState(false);
 
   // Estado general
   const [busy, setBusy] = useState(false);
@@ -83,6 +88,19 @@ export default function HRRequests() {
     }
   }
 
+  // Cargar historial de auditoría
+  async function refreshAudit() {
+    setAuditLoading(true);
+    try {
+      const res = await api('/attendance/audit?limit=50');
+      setAuditLogs(res.logs || []);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setAuditLoading(false);
+    }
+  }
+
   useEffect(() => {
     refreshVacations();
     refreshAttendance();
@@ -91,6 +109,8 @@ export default function HRRequests() {
   useEffect(() => {
     if (currentTab === 'attendance') {
       refreshAttendance();
+    } else if (currentTab === 'audit') {
+      refreshAudit();
     }
   }, [attFilters, attPage, currentTab]);
 
@@ -119,24 +139,27 @@ export default function HRRequests() {
     }
   }
 
-  // Revisar justificación de asistencia
-  async function reviewJustification(e, justificationId, status) {
-    e.preventDefault();
-    const form = e.currentTarget;
+  // Revisar justificación de asistencia (Aprobar, Rechazar o Solicitar información adicional)
+  async function submitJustificationReview(justificationId, status, commentText = '') {
     setBusy(true);
     setError(null);
     setSuccess(null);
     try {
-      const comment = new FormData(form).get('comment');
       const result = await api('/attendance/justifications/' + justificationId + '/review', {
         method: 'PATCH',
-        body: { status, comment }
+        body: { status, comment: commentText }
       });
+      const labelMap = {
+        approved: 'aprobada',
+        rejected: 'rechazada',
+        info_required: 'marcada con solicitud de información adicional'
+      };
       setSuccess({
-        message: `Justificación ${status === 'approved' ? 'aprobada' : status === 'rejected' ? 'rechazada' : 'actualizada'}. La situación de asistencia fue actualizada en el sistema.`,
+        message: `Justificación ${labelMap[status] || 'actualizada'}. La situación administrativa y la auditoría fueron actualizadas.`,
         status: result[HTTP_STATUS]
       });
       setReviewingJustification(null);
+      setReviewComment('');
       await refreshAttendance();
     } catch (err) {
       setError(err);
@@ -200,7 +223,7 @@ export default function HRRequests() {
         <div>
           <div className="eyebrow">RECURSOS HUMANOS</div>
           <h1>Gestión y Solicitudes RH</h1>
-          <p>Control integral de puntualidad, asistencias, incidencias y vacaciones de tu empresa.</p>
+          <p>Control integral de puntualidad, asistencias, incidencias, auditoría y vacaciones de tu empresa.</p>
         </div>
       </div>
 
@@ -219,9 +242,15 @@ export default function HRRequests() {
         >
           Solicitudes de Vacaciones ({vacationRequests.filter(v => v.status === 'pending').length})
         </button>
+        <button
+          className={'hr-tab ' + (currentTab === 'audit' ? 'hr-tab-active' : '')}
+          onClick={() => setCurrentTab('audit')}
+        >
+          Historial de Decisiones y Auditoría
+        </button>
       </div>
 
-      {currentTab === 'attendance' ? (
+      {currentTab === 'attendance' && (
         <section className="hr-attendance-section">
           {/* Métricas Generales */}
           <div className="attendance-stats-grid">
@@ -293,11 +322,11 @@ export default function HRRequests() {
             </div>
           </div>
 
-          {/* Filtros */}
-          <form className="attendance-filters" onSubmit={handleAttSearch}>
+          {/* Filtros completos solicitados */}
+          <form className="attendance-filters" onSubmit={handleAttSearch} style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
             <label className="field">
-              Búsqueda
-              <input type="search" name="search" placeholder="Nombre o correo..." />
+              Nombre o Correo
+              <input type="search" name="search" placeholder="Buscar colaborador..." />
             </label>
             <label className="field">
               Desde
@@ -308,11 +337,29 @@ export default function HRRequests() {
               <input type="date" name="to" />
             </label>
             <label className="field">
-              Estado
+              Día de la semana
+              <select name="weekday">
+                <option value="">Todos los días</option>
+                {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map((name, i) => (
+                  <option value={i} key={name}>{name}</option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              Estado de asistencia
               <select name="status">
                 <option value="">Todos los estados</option>
                 {Object.entries(STATUS_LABELS).map(([k, v]) => (
                   <option key={k} value={k}>{v.label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="field">
+              Tipo de justificación
+              <select name="incident_type">
+                <option value="">Todos los tipos</option>
+                {INCIDENT_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
             </label>
@@ -395,7 +442,10 @@ export default function HRRequests() {
                             {hasJustification ? (
                               <button
                                 className="btn btn-secondary btn-sm"
-                                onClick={() => setReviewingJustification(rec)}
+                                onClick={() => {
+                                  setReviewComment(rec.review_comment || '');
+                                  setReviewingJustification(rec);
+                                }}
                                 title="Abrir y revisar comprobante"
                               >
                                 <FileText size={13} /> Revisar ({rec.justification_status})
@@ -503,33 +553,36 @@ export default function HRRequests() {
                       Motivo de la decisión / Comentario para el colaborador
                       <textarea
                         name="comment"
-                        id="reviewCommentText"
+                        value={reviewComment}
+                        onChange={e => setReviewComment(e.target.value)}
                         rows={3}
                         maxLength={1000}
-                        placeholder="Ingresa la justificación de la aprobación o rechazo..."
+                        placeholder="Ingresa el motivo de aprobación, rechazo o requerimiento de información adicional..."
                       />
                     </label>
 
-                    <div className="form-actions" style={{ marginTop: '16px' }}>
+                    <div className="form-actions" style={{ marginTop: '16px', flexWrap: 'wrap', gap: '8px' }}>
                       <button
                         type="button"
                         className="btn btn-secondary"
                         disabled={busy}
-                        onClick={e => {
-                          const comment = document.getElementById('reviewCommentText').value;
-                          reviewJustification({ currentTarget: { get: () => comment }, preventDefault: () => {} }, reviewingJustification.justification_id, 'rejected');
-                        }}
+                        onClick={() => submitJustificationReview(reviewingJustification.justification_id, 'rejected', reviewComment)}
                       >
                         Rechazar
                       </button>
                       <button
                         type="button"
+                        className="btn btn-secondary"
+                        disabled={busy}
+                        onClick={() => submitJustificationReview(reviewingJustification.justification_id, 'info_required', reviewComment)}
+                      >
+                        <HelpCircle size={15} /> Solicitar información adicional
+                      </button>
+                      <button
+                        type="button"
                         className="btn btn-primary"
                         disabled={busy}
-                        onClick={e => {
-                          const comment = document.getElementById('reviewCommentText').value;
-                          reviewJustification({ currentTarget: { get: () => comment }, preventDefault: () => {} }, reviewingJustification.justification_id, 'approved');
-                        }}
+                        onClick={() => submitJustificationReview(reviewingJustification.justification_id, 'approved', reviewComment)}
                       >
                         <CheckCircle2 size={16} /> Aprobar justificación
                       </button>
@@ -540,7 +593,9 @@ export default function HRRequests() {
             </div>
           )}
         </section>
-      ) : (
+      )}
+
+      {currentTab === 'vacations' && (
         /* Sección de Vacaciones (código existente conservado al 100%) */
         <section className="hr-vacations-section">
           <label className="field hr-filter">
@@ -593,6 +648,60 @@ export default function HRRequests() {
                 <p className="attendance-empty">No hay solicitudes en este estado.</p>
               )}
             </div>
+          )}
+        </section>
+      )}
+
+      {currentTab === 'audit' && (
+        <section className="hr-audit-section">
+          <div className="section-heading">
+            <div>
+              <h2>Registro de Auditoría y Decisiones</h2>
+              <p className="fineprint">Trazabilidad inmutable de presentaciones, aprobaciones, rechazos y ajustes de reglas en tu compañía.</p>
+            </div>
+            <button className="icon-button" onClick={refreshAudit} disabled={auditLoading} title="Actualizar auditoría">
+              <RefreshCw size={16} />
+            </button>
+          </div>
+
+          {auditLoading ? (
+            <Spinner label="Consultando bitácora de auditoría..." />
+          ) : auditLogs.length ? (
+            <div className="data-table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>FECHA / HORA</th>
+                    <th>USUARIO</th>
+                    <th>OPERACIÓN</th>
+                    <th>ENTIDAD</th>
+                    <th>MOTIVO / DETALLE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditLogs.map(log => (
+                    <tr key={log.id}>
+                      <td>
+                        {new Date(log.created_at).toLocaleString('es-CR', { timeZone: 'America/Costa_Rica' })}
+                      </td>
+                      <td className="employee-cell">
+                        <strong>{log.actor_name}</strong>
+                        <small>{log.actor_email} ({log.actor_role})</small>
+                      </td>
+                      <td>
+                        <span className="schedule-pill">{log.action}</span>
+                      </td>
+                      <td>
+                        <small>{log.entity_type}</small>
+                      </td>
+                      <td>{log.reason || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="attendance-empty">Aún no se registran eventos de auditoría para esta empresa.</p>
           )}
         </section>
       )}

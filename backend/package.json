@@ -11,7 +11,16 @@
     "seed": "node src/db/seedDemo.js",
     "seed:collaborators": "node src/db/seedCollaborators.js",
     "seed:attendance": "node src/db/seedAttendanceDemo.js",
-    "test": "node --test tests/*.test.js"
+    "test": "node --test tests/*.test.js",
+    "predev": "node ../scripts/ensure-dependencies.mjs --backend",
+    "prestart": "node ../scripts/ensure-dependencies.mjs --backend",
+    "premigrate": "node ../scripts/ensure-dependencies.mjs --backend",
+    "predoctor": "node ../scripts/ensure-dependencies.mjs --backend",
+    "preseed": "node ../scripts/ensure-dependencies.mjs --backend",
+    "db:migrate": "node src/db/migrate.js",
+    "db:photos": "npm --prefix .. run db:photos",
+    "setup": "npm --prefix .. run setup",
+    "predb:migrate": "node ../scripts/ensure-dependencies.mjs --backend"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -26,6 +35,7 @@
     "multer": "^2.5.0",
     "mysql2": "^3.14.3",
     "node-cron": "^4.2.1",
+    "sharp": "^0.35.5",
     "unpdf": "^1.9.1",
     "zod": "^3.25.76"
   },

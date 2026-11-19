@@ -1,15 +1,16 @@
 /** Migraciones seguras y repetibles; no modifica tablas ajenas al prefijo pb_. */
 import mysql from 'mysql2/promise';
+import {isPublishedUpgrade} from './publishedMigrations.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import {createHash} from 'node:crypto';
+import {migrationChecksum,matchesMigrationChecksum} from './migrationChecksums.js';
 import {fileURLToPath} from 'node:url';
 import {env} from '../config/env.js';
 
 export const migrationDir=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../../database/migrations');
 export const tracker='pb_schema_migrations';
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-export const digest=sql=>createHash('sha256').update(sql,'utf8').digest('hex');
+export const digest=migrationChecksum;
 const dryRun=process.argv.includes('--dry-run');
 const statusOnly=process.argv.includes('--status');
 
@@ -112,8 +113,9 @@ async function main(){
       const sql=await fs.readFile(path.join(migrationDir,filename),'utf8');
       const checksum=digest(sql);
       if(done.has(filename)){
-        if(done.get(filename)!==checksum)throw new Error(`La migración aplicada ${filename} fue modificada. No se reescribe la historia; revisa el archivo.`);
-        console.log(`OK    ${filename} (ya aplicada)`);continue;
+        const same=matchesMigrationChecksum(done.get(filename),sql);
+        if(!same&&!isPublishedUpgrade(filename,done.get(filename),checksum))throw new Error(`La migración aplicada ${filename} fue modificada. Registrado: ${done.get(filename)}. Archivo (LF): ${checksum}. No se reescribe la historia; revisa el archivo.`);
+        console.log(`OK    ${filename} (${same?'ya aplicada':'revisión publicada anterior; se conserva su checksum'})`);continue;
       }
       if(statusOnly||dryRun){console.log(`FALTA ${filename}${dryRun?' (simulación, sin ejecutar)':''}`);continue;}
       // MySQL no soporta rollback integral de DDL. Cada CREATE usa IF NOT EXISTS para permitir un reintento.

@@ -24,6 +24,7 @@ import {
   detectAbsencesForDate,
   getCompanyAttendanceSettings,
   updateCompanyAttendanceSettings,
+  getAttendanceAuditLog,
   INCIDENT_TYPES
 } from '../services/attendance.service.js';
 
@@ -171,12 +172,26 @@ router.post('/justifications', upload.single('file'), asyncHandler(async (req, r
  * Consulta las justificaciones propias del colaborador.
  */
 router.get('/justifications/my', asyncHandler(async (req, res) => {
-  const justifications = await getCompanyJustifications(req.companyId, {
-    status: req.query.status
+  const result = await getCompanyJustifications(req.companyId, {
+    userId: req.user.id,
+    status: req.query.status,
+    page: req.query.page,
+    limit: req.query.limit
   });
-  // Filtrar solo las propias del usuario autenticado
-  const myJustifications = justifications.justifications.filter(j => j.user_id === req.user.id);
-  res.json({ justifications: myJustifications });
+  res.json(result);
+}));
+
+/**
+ * Consulta el historial de decisiones y auditoría de asistencia (solo RRHH o Administración).
+ */
+router.get('/audit', asyncHandler(async (req, res) => {
+  if (!canReview(req.user.role)) {
+    throw new HttpError(403, 'Solo Recursos Humanos o Administración pueden consultar el registro de auditoría.');
+  }
+  const result = await getAttendanceAuditLog(req.companyId, {
+    limit: req.query.limit ? Number(req.query.limit) : 50
+  });
+  res.json(result);
 }));
 
 /**

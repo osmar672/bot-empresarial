@@ -231,6 +231,9 @@ export default function AttendanceCard() {
                                 {entry.justification_status === 'rejected' && (
                                   <span className="badge-just-rejected"><AlertTriangle size={12} /> Rechazada</span>
                                 )}
+                                {entry.justification_status === 'info_required' && (
+                                  <span className="badge-just-pending"><HelpCircle size={12} /> Requiere info</span>
+                                )}
                               </div>
                             ) : canJustify ? (
                               <button
