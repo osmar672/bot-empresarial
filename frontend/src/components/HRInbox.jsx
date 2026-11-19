@@ -197,21 +197,23 @@ export default function HRInbox() {
         ))
       )}
       <div className="ops-pagination">
-        <button
-          className="btn btn-secondary"
-          disabled={page === 1 || busy}
-          onClick={() => setPage(page - 1)}
-        >
-          Anterior
-        </button>
         <span>Página {page}</span>
-        <button
-          className="btn btn-secondary"
-          disabled={!data?.hasMore || busy}
-          onClick={() => setPage(page + 1)}
-        >
-          Siguiente
-        </button>
+        <div className="ops-pagination-actions">
+          <button
+            className="btn btn-secondary"
+            disabled={page === 1 || busy}
+            onClick={() => setPage(page - 1)}
+          >
+            Anterior
+          </button>
+          <button
+            className="btn btn-secondary"
+            disabled={!data?.hasMore || busy}
+            onClick={() => setPage(page + 1)}
+          >
+            Siguiente
+          </button>
+        </div>
       </div>
     </section>
   );

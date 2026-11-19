@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { one, many, run, transaction } from '../db/pool.js';
 import { env } from '../config/env.js';
 import { HttpError } from '../utils/errors.js';
+import { recordPunctuality } from './punctuality.service.js';
 
 export const TIMEZONE = 'America/Costa_Rica';
 
@@ -295,6 +296,8 @@ export async function checkInEmployee(req) {
         attendanceStatus
       ]
     );
+
+    await recordPunctuality(cx, { companyId, userId, entryId: id });
 
     return {
       ok: true,
