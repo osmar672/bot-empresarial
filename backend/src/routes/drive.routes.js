@@ -6,6 +6,6 @@ import {configureFolder,folderDetails,syncDrive,diagnoseDrive} from '../services
 const router=Router();router.use(authenticate,adminOnly);
 router.get('/',asyncHandler(async(req,res)=>res.json(await folderDetails(req.companyId))));
 router.post('/diagnose',asyncHandler(async(req,res)=>res.json(await diagnoseDrive(req.companyId))));
-router.put('/',asyncHandler(async(req,res)=>{const {folderId}=folderSchema.parse(req.body);await configureFolder(req.companyId,folderId);res.json({ok:true,folderId});}));
+router.put('/',asyncHandler(async(req,res)=>{const {folderId}=folderSchema.parse(req.body);await configureFolder(req.companyId,folderId);res.json({ok:true,folderId});if(folderId)setImmediate(()=>syncDrive(req.companyId).catch(error=>console.error('Sincronización inicial de Drive:',error.message)));}));
 router.post('/sync',asyncHandler(async(req,res)=>res.json(await syncDrive(req.companyId))));
 export default router;

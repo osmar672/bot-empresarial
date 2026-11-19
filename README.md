@@ -187,9 +187,9 @@ Consulta `docs/PRUEBAS_DE_ACEPTACION.md` para las siete pruebas del PDF y `docs/
 ## Limitaciones del MVP
 
 - Los embeddings JSON se puntúan en el proceso Node (búsqueda exacta), no con un índice vectorial dentro de MySQL. Funciona para volúmenes reducidos; para miles de documentos requiere una implementación de búsqueda vectorial indexada.
-- Sin OCR: los PDF que son exclusivamente imágenes no se indexan.
+- OCR local para páginas escaneadas en español e inglés. La precisión depende de la calidad del escaneo; revisar cifras y originales.
 - Sin panel de propietario de plataforma para cobros. Planes `gratis`/`pro` y cuotas **sí** están implementados, sin integración de pagos.
-- El alta de colaboradores crea credenciales iniciales. No hay envío automático de correo ni recuperación de contraseña.
+- Correo de bienvenida, verificación y recuperación disponibles al configurar Resend y un remitente verificado. Sin configuración, los mensajes permanecen pendientes.
 - La sincronización periódica usa un proceso cron en el servidor y no una cola distribuida.
 - El modo local de hashing recupera principalmente términos coincidentes. Para demostrar RAG semántico completo usa Voyage.
 
@@ -200,3 +200,11 @@ Consulta `docs/PRUEBAS_DE_ACEPTACION.md` para las siete pruebas del PDF y `docs/
 - https://developers.google.com/workspace/guides/create-credentials
 - https://developers.google.com/workspace/drive/api/guides/manage-downloads
 - https://docs.voyageai.com/docs/embeddings
+
+## Personal, reportes y aplicación instalable
+
+Permisos por horas, saldo de vacaciones con movimientos, OCR, búsqueda general, exportaciones Excel/PDF, instalación móvil y restauración de respaldos: instrucciones en [Herramientas de personal y móvil](docs/HERRAMIENTAS_PERSONAL_Y_MOVIL.md).
+
+## Flujos de RH y protección del acceso
+
+Correcciones de marcaciones, bandeja de RH, respuestas de IA revisadas, aceptación de políticas por versión, tareas de ingreso, autenticación en dos pasos y conectores de respaldo externo: [guía de operación](docs/FLUJOS_RH_IA_Y_DOBLE_FACTOR.md).

@@ -1,0 +1,4 @@
+import {ApiError} from './api.js';
+export function uploadDocument(file,roles,onProgress,{documentId=null}={}){
+ return new Promise((resolve,reject)=>{const xhr=new XMLHttpRequest();xhr.open('POST','/api/documents/'+(documentId?documentId+'/new-version':'upload-queued'));xhr.withCredentials=true;const form=new FormData();form.append('file',file);form.append('allowedRoles',JSON.stringify(roles));xhr.upload.onprogress=e=>onProgress(e.lengthComputable?Math.round(e.loaded/e.total*100):null);xhr.onerror=()=>reject(new ApiError('No se pudo completar la transferencia. Revisa tu conexión.',0));xhr.onabort=()=>reject(new ApiError('Carga cancelada',0));xhr.onload=()=>{let data={};try{data=JSON.parse(xhr.responseText);}catch{}if(xhr.status<200||xhr.status>=300)reject(new ApiError(data.error||'No se pudo subir el archivo',xhr.status));else resolve(data);};xhr.send(form);});
+}

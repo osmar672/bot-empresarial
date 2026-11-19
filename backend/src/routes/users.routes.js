@@ -1,3 +1,4 @@
+import {audit,notify} from '../services/activity.service.js';
 import {queueWelcome,dispatchWelcome} from '../services/mail.service.js';
 import {Router} from 'express';
 import bcrypt from 'bcryptjs';
@@ -127,6 +128,8 @@ router.patch('/:id/role',asyncHandler(async(req,res)=>{
   }
 
   await cx.execute('UPDATE pb_users SET role=? WHERE id=? AND company_id=?',[role,id,req.companyId]);
+  await audit({companyId:req.companyId,actorId:req.user.id,action:'users.role_changed',targetType:'user',targetId:id,detail:{from:users[0].role,to:role}},cx);
+  await notify({companyId:req.companyId,userId:id,kind:'security',title:'Tu rol fue actualizado',body:'Administración actualizó tu rol de acceso.',target:'profile'},cx);
  });res.json({ok:true});
 }));
 export default router;

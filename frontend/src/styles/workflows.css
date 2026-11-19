@@ -1,0 +1,123 @@
+.mfa-login {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #faf9f6;
+}
+.mfa-login > section {
+  width: min(100%, 480px);
+  margin: 0;
+}
+.mfa-setup {
+  margin: 20px 0;
+  background: #f7f3fc;
+  padding: 20px;
+  border: 1px solid #e7def3;
+  border-radius: 12px;
+}
+.mfa-setup img {
+  display: block;
+  width: 220px;
+  max-width: 100%;
+  height: auto;
+  background: white;
+  border-radius: 8px;
+}
+.mfa-setup code {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 15px;
+  user-select: all;
+}
+.recovery-codes {
+  padding: 20px;
+  border: 1px solid #d8c9eb;
+  border-radius: 12px;
+  margin: 20px 0;
+}
+.recovery-codes pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: #faf8fd;
+  padding: 15px;
+  font-size: 12px;
+}
+.recovery-codes button {
+  margin-right: 12px;
+  margin-top: 8px;
+}
+.policy-reader {
+  width: min(850px, 94vw);
+  max-height: 90dvh;
+}
+.policy-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.8;
+  font-size: 15px;
+  border: 1px solid #e3dbec;
+  border-radius: 12px;
+  background: #faf8fd;
+  padding: 24px;
+  max-height: 52dvh;
+  overflow: auto;
+}
+.policy-reader form {
+  display: grid;
+  gap: 18px;
+  margin-top: 20px;
+}
+.workflow-progress {
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: #efebf6;
+  color: #614e80;
+  font-weight: 600;
+}
+.reviewed-answer {
+  white-space: pre-wrap;
+}
+.people-card details > summary {
+  cursor: pointer;
+  padding: 14px 0;
+  font-weight: 600;
+  color: #6950b8;
+}
+.people-card details > form {
+  margin: 12px 0 24px;
+}
+.vacation-request small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.vacation-request {
+  overflow-wrap: anywhere;
+}
+.sidebar .side-nav {
+  min-height: 80px;
+  overflow-y: auto;
+  flex-shrink: 1;
+  scrollbar-width: thin;
+}
+.sidebar-spacer {
+  min-height: 12px;
+}
+.people-card .vacation-request h2 {
+  font-size: 18px;
+}
+@media (max-width: 640px) {
+  .mfa-login {
+    padding: 12px;
+  }
+  .policy-text {
+    padding: 16px;
+    font-size: 14px;
+  }
+  .policy-reader .people-checkbox {
+    align-items: flex-start;
+  }
+  .people-card .form-actions {
+    flex-wrap: wrap;
+  }
+}

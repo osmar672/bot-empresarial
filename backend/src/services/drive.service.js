@@ -89,7 +89,8 @@ export async function configureFolder(companyId,folderId){
 export async function folderDetails(companyId){
   const c=await one('SELECT drive_folder_id FROM pb_companies WHERE id=?',[companyId]);
   const last=await one('SELECT state,scanned,indexed,message,started_at,finished_at FROM pb_sync_runs WHERE company_id=? ORDER BY started_at DESC LIMIT 1',[companyId]);
-  return {folderId:c?.drive_folder_id||'',last,configuration:driveConfiguration()};
+  const configuration=driveConfiguration();
+  return {folderId:c?.drive_folder_id||'',last,syncSchedule:env.syncCron,autoSync:Boolean(c?.drive_folder_id&&configuration.status==='configured'),configuration};
 }
 export async function syncDrive(companyId,{client=null}={}){
   if(active.has(companyId))throw new HttpError(409,'Ya hay una sincronización en curso');

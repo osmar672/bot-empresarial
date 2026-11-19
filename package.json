@@ -33,7 +33,17 @@
     "predb:photos": "node scripts/ensure-dependencies.mjs --backend",
     "predb:migrate": "node scripts/ensure-dependencies.mjs --backend",
     "predb:status": "node scripts/ensure-dependencies.mjs --backend",
-    "predb:dry-run": "node scripts/ensure-dependencies.mjs --backend"
+    "predb:dry-run": "node scripts/ensure-dependencies.mjs --backend",
+    "test:profile-customization": "node scripts/profile-customization.integration.mjs",
+    "backup": "node scripts/database-backup.mjs",
+    "test:operations": "node scripts/operations.integration.mjs",
+    "mail:test": "node scripts/mail-test.mjs",
+    "test:people-tools": "node scripts/people-tools.integration.mjs",
+    "test:ocr": "node scripts/ocr.integration.mjs",
+    "test:backup-restore": "node scripts/backup-restore.integration.mjs",
+    "test:security-mail": "node scripts/security-mail.integration.mjs",
+    "test:workflows": "node scripts/workflows.integration.mjs",
+    "test:external-backup": "node scripts/external-backup.integration.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
