@@ -29,7 +29,7 @@ router.post('/',limiter,asyncHandler(async(req,res)=>{
  if(!nonce||!/^[a-f0-9]{64}$/.test(nonce))throw new HttpError(401,'Vuelve a pulsar el botón de acceso con Google');
  const identity=await verify(credential,nonce,{clientId});
  const user=await resolve(identity,{password});
- setSession(res,user);res.json({user});
+ await setSession(res,user,req);res.json({user});
 }));
 return router;
 }

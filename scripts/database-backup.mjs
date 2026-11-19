@@ -1,0 +1,4 @@
+import path from 'node:path';
+import {createDatabaseBackup,readDatabaseBackup} from '../backend/src/services/backup.service.js';
+import {pool} from '../backend/src/db/pool.js';
+try{const args=process.argv.slice(2);if(args[0]==='verify'){if(!args[1])throw new Error('Uso: npm run backup -- verify archivo.sql.gz.enc');console.log(await readDatabaseBackup(path.resolve(args[1])));}else if(args[0]==='decrypt'){if(!args[1]||!args[2])throw new Error('Uso: npm run backup -- decrypt respaldo.sql.gz.enc salida.sql');await readDatabaseBackup(path.resolve(args[1]),path.resolve(args[2]));console.log('SQL descifrado y verificado en el archivo indicado. No se modificó la base de datos.');}else if(!args.length)console.log(await createDatabaseBackup());else throw new Error('Comando de respaldo desconocido');}catch(error){console.error(error.message);process.exitCode=1;}finally{await pool.end();}

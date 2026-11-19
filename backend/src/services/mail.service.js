@@ -23,3 +23,5 @@ async function sendResend(mail){
 }
 export async function dispatchWelcome(id){try{return await sendPendingMail(id);}catch{return {status:'pending'};}}
 export function startMailWorker(){let running=false;const tick=async()=>{if(running||!mailConfigured())return;running=true;try{await run("UPDATE pb_mail_outbox SET state='pending' WHERE state='processing' AND updated_at<UTC_TIMESTAMP()-INTERVAL 10 MINUTE");const {many}=await import('../db/pool.js');const mails=await many("SELECT id FROM pb_mail_outbox WHERE state='pending' AND next_attempt_at<=UTC_TIMESTAMP(3) ORDER BY next_attempt_at LIMIT 10");for(const mail of mails)await dispatchWelcome(mail.id);}catch{console.error('No se pudo procesar la cola de correo. Revisa las migraciones y configuración.');}finally{running=false;}};const timer=setInterval(tick,60000);timer.unref();return ()=>clearInterval(timer);}
+
+export const sendTransactionalMail=sendResend;

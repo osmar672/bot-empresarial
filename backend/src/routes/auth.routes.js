@@ -1,3 +1,6 @@
+import {requestAccountLink} from '../services/accountSecurity.service.js';
+import {run,transaction as withTransaction} from '../db/pool.js';
+import {revokeLegacy} from '../services/accountSecurity.service.js';
 import {photoUrl} from '../services/profilePhoto.service.js';
 import {queueWelcome,dispatchWelcome} from '../services/mail.service.js';
 import {Router} from 'express';
@@ -22,15 +25,16 @@ router.post('/register',limiter,asyncHandler(async(req,res)=>{
     mailId=await queueWelcome(cx,{id:userId,companyId,email:data.email,name:data.name});
   });
   const welcomeEmail=await dispatchWelcome(mailId);
-  setSession(res,{id:userId});
+  await setSession(res,{id:userId},req);
+  await requestAccountLink(userId,'verify').catch(error=>console.error('No se pudo preparar el correo de verificación:',error.code||'QUEUE_ERROR'));
   res.status(201).json({welcomeEmail,user:{id:userId,name:data.name,email:data.email,role:'admin'},company:{id:companyId,name:data.companyName,plan:'gratis'}});
 }));
 router.post('/login',limiter,asyncHandler(async(req,res)=>{
   const {email,password}=loginSchema.parse(req.body);
   const row=await one('SELECT id,name,email,role,password_hash FROM pb_users WHERE email=?',[email]);
   if(!row||!(await bcrypt.compare(password,row.password_hash)))throw new HttpError(401,'Correo o contraseña incorrectos');
-  setSession(res,row);res.json({user:{id:row.id,name:row.name,email:row.email,role:row.role}});
+  await setSession(res,row,req);res.json({user:{id:row.id,name:row.name,email:row.email,role:row.role}});
 }));
-router.post('/logout',(_req,res)=>{clearSession(res);res.json({ok:true});});
+router.post('/logout',authenticate,asyncHandler(async(req,res)=>{if(req.sessionId)await run('UPDATE pb_login_sessions SET revoked_at=UTC_TIMESTAMP(3) WHERE id=? AND user_id=?',[req.sessionId,req.user.id]);else await withTransaction(cx=>revokeLegacy(cx,req.user));clearSession(res);res.json({ok:true});}));
 router.get('/me',authenticate,asyncHandler(async(req,res)=>res.json({user:{photo_url:await photoUrl(req.user.id,req.companyId),id:req.user.id,name:req.user.name,email:req.user.email,role:req.user.role,role_label:req.user.role_label},company:{id:req.companyId,name:req.user.company_name,plan:req.user.plan_id}})));
 export default router;

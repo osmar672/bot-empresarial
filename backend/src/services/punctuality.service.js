@@ -33,10 +33,11 @@ export async function recordPunctuality(cx, { companyId, userId, entryId }) {
     [entryId, companyId, userId],
   );
   const [days] = await cx.execute(
-    "SELECT day_of_week,start_time,end_time,state FROM pb_work_schedules WHERE company_id=? AND user_id=?",
+    "SELECT day_of_week,start_time,end_time,state,updated_at FROM pb_work_schedules WHERE company_id=? AND user_id=?",
     [companyId, userId],
   );
   const expected = expectedShift(days, entry.checked_in_at);
+  if(expected){const assigned=days.find(d=>d.day_of_week===weekday(dayOf(expected)));if(assigned?.updated_at&&new Date(assigned.updated_at)>expected)return;const [holidays]=await cx.execute('SELECT id FROM pb_holidays WHERE company_id=? AND day=?',[companyId,dayOf(expected)]);if(holidays.length)return;}
   if (expected)
     await cx.execute(
       "INSERT INTO pb_attendance_punctuality(attendance_id,user_id,company_id,expected_at,is_punctual) VALUES (?,?,?,?,?)",
@@ -118,7 +119,7 @@ export function calculateStreak({
   };
 }
 export async function getPunctuality(companyId, userId) {
-  const [days, entries, vacations, clock] = await Promise.all([
+  const [days, entries, vacations, clock, holidays] = await Promise.all([
     many(
       "SELECT day_of_week,start_time,end_time,state,updated_at FROM pb_work_schedules WHERE company_id=? AND user_id=?",
       [companyId, userId],
@@ -132,6 +133,7 @@ export async function getPunctuality(companyId, userId) {
       [companyId, userId],
     ),
     one("SELECT UTC_TIMESTAMP(3) AS now"),
+    many("SELECT DATE_FORMAT(day,'%Y-%m-%d') AS day FROM pb_holidays WHERE company_id=?",[companyId]),
   ]);
-  return calculateStreak({ days, entries, vacations, now: clock.now });
+  return calculateStreak({ days, entries, vacations:[...vacations,...holidays.map(h=>({start_date:h.day,end_date:h.day}))], now: clock.now });
 }

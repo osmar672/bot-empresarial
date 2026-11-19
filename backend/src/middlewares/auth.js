@@ -1,10 +1,11 @@
+import {newLoginSession,checkSession} from '../services/accountSecurity.service.js';
 import jwt from 'jsonwebtoken';
 import {env} from '../config/env.js';
 import {one} from '../db/pool.js';
 import {HttpError} from '../utils/errors.js';
 const COOKIE='policybot_session';
 export function getCookie(req,name=COOKIE){const value=String(req.headers.cookie||'').split(';').map(p=>p.trim()).find(p=>p.startsWith(name+'='));return value?decodeURIComponent(value.slice(name.length+1)):null;}
-export function setSession(res,user){const token=jwt.sign({sub:user.id},env.jwtSecret,{expiresIn:'8h',issuer:'policybot'});res.cookie(COOKIE,token,{httpOnly:true,sameSite:'lax',secure:env.nodeEnv==='production',path:'/api',maxAge:8*60*60*1000});}
+export async function setSession(res,user,req={}){const sid=await newLoginSession(user.id,req);const token=jwt.sign({sub:user.id,sid},env.jwtSecret,{expiresIn:'8h',issuer:'policybot'});res.cookie(COOKIE,token,{httpOnly:true,sameSite:'lax',secure:env.nodeEnv==='production',path:'/api',maxAge:8*60*60*1000});return sid;}
 export function clearSession(res){res.clearCookie(COOKIE,{httpOnly:true,sameSite:'lax',secure:env.nodeEnv==='production',path:'/api'});}
 export async function authenticate(req,_res,next){try{
   const cookie=getCookie(req);
@@ -12,6 +13,7 @@ export async function authenticate(req,_res,next){try{
   let decoded;try{decoded=jwt.verify(cookie,env.jwtSecret,{issuer:'policybot'});}catch{throw new HttpError(401,'Sesión expirada o inválida');}
   const user=await one(`SELECT u.id,u.company_id,u.name,u.email,u.role,r.label AS role_label,c.name AS company_name,c.plan_id FROM pb_users u JOIN pb_roles r ON r.code=u.role JOIN pb_companies c ON c.id=u.company_id WHERE u.id=?`,[decoded.sub]);
   if(!user)throw new HttpError(401,'Usuario no encontrado');
+  req.sessionId=await checkSession(decoded,user);
   req.user=user; req.companyId=user.company_id;next();
 }catch(error){next(error);}}
 export function adminOnly(req,_res,next){if(req.user?.role!=='admin')return next(new HttpError(403,'Acceso permitido solo a administradores'));next();}

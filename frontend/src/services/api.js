@@ -25,8 +25,8 @@ export async function api(path, { method = 'GET', body, signal } = {}) {
   if(data&&typeof data==='object')Object.defineProperty(data,HTTP_STATUS,{value:res.status});
   return data;
 }
-export async function chatStream(question,{onEvent,signal,conversationId}={}){
-  const res=await request('/api/chat/stream',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,...(conversationId?{conversationId}:{})}),signal});
+export async function chatStream(question,{onEvent,signal,conversationId,documentIds}={}){
+  const res=await request('/api/chat/stream',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,...(conversationId?{conversationId}:{}),...(documentIds?.length?{documentIds}:{})}),signal});
   if(!res.ok){let message=`Error ${res.status}`;try{message=(await res.json()).error||message;}catch{}throw new ApiError(message,res.status);}
   if(!res.body)throw new Error('Streaming no disponible');
   const reader=res.body.getReader(),decoder=new TextDecoder();let buffer='';

@@ -1,3 +1,4 @@
+import {audit,notifyDocument,notifyReviewers} from './activity.service.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {env} from '../config/env.js';
@@ -23,7 +24,7 @@ export async function createDocument({companyId,name,mime,source='upload',driveF
   });
   return id;
 }
-export async function indexDocument(companyId,documentId,text){
+export async function indexDocument(companyId,documentId,text,{onProgress=null,onIndexed=null}={}){
   const doc=await one('SELECT id FROM pb_documents WHERE id=? AND company_id=?',[documentId,companyId]);
   if(!doc)throw new HttpError(404,'Documento no encontrado');
   const pieces=splitText(text);
@@ -36,8 +37,11 @@ export async function indexDocument(companyId,documentId,text){
       for(let start=0;start<pieces.length;start+=32){
         const batch=pieces.slice(start,start+32),vectors=await embed(batch,'document');
         for(let j=0;j<batch.length;j++)await cx.execute(`INSERT INTO pb_chunks(id,company_id,document_id,chunk_index,content,embedding,embedding_model) VALUES (?,?,?,?,?,?,?)`,[randomUUID(),companyId,documentId,start+j,batch[j],JSON.stringify(vectors[j]),embeddingModel()]);
+        if(onProgress)await onProgress((start+batch.length)/pieces.length);
       }
       await cx.execute(`UPDATE pb_documents SET state='indexado',chunk_count=?,indexed_at=NOW(3),error_message=NULL WHERE id=? AND company_id=?`,[pieces.length,documentId,companyId]);
+      if(onIndexed)await onIndexed(cx);
+      await notifyDocument(companyId,documentId,cx);
     });
     return pieces.length;
   }catch(error){
@@ -45,7 +49,13 @@ export async function indexDocument(companyId,documentId,text){
     throw error;
   }
 }
-export async function removeDocument(companyId,id){const doc=await one('SELECT storage_path FROM pb_documents WHERE id=? AND company_id=?',[id,companyId]);if(!doc)throw new HttpError(404,'Documento no encontrado');await run('DELETE FROM pb_documents WHERE id=? AND company_id=?',[id,companyId]);if(doc.storage_path)await fs.unlink(path.join(env.backendDir,'uploads',path.basename(doc.storage_path))).catch(()=>{});}
+export async function removeDocument(companyId,id,actorId=null){
+ const doc=await one('SELECT storage_path,name FROM pb_documents WHERE id=? AND company_id=?',[id,companyId]);if(!doc)throw new HttpError(404,'Documento no encontrado');
+ const versions=await many('SELECT storage_path FROM pb_document_versions WHERE document_id=? AND company_id=?',[id,companyId]);
+ const active=await one("SELECT id FROM pb_document_jobs WHERE document_id=? AND company_id=? AND state IN ('queued','processing')",[id,companyId]);if(active)throw new HttpError(409,'Espera a que termine el procesamiento antes de eliminar el documento');
+ await transaction(async cx=>{await cx.execute('DELETE FROM pb_documents WHERE id=? AND company_id=?',[id,companyId]);await audit({companyId,actorId,action:'documents.deleted',targetType:'document',targetId:id,detail:{name:doc.name}},cx);});
+ for(const stored of new Set([doc.storage_path,...versions.map(v=>v.storage_path)].filter(Boolean)))await fs.unlink(path.join(env.backendDir,'uploads',path.basename(stored))).catch(()=>{});
+}
 
 export async function reindexExisting(companyId,documentId){
   const doc=await one('SELECT id FROM pb_documents WHERE company_id=? AND id=?',[companyId,documentId]);

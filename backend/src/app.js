@@ -1,3 +1,8 @@
+import activity from './routes/activity.routes.js';
+import calendar from './routes/calendar.routes.js';
+import security from './routes/security.routes.js';
+import hrDashboard from './routes/hr-dashboard.routes.js';
+import documentJobs from './routes/document-jobs.routes.js';
 import express from 'express';
 import helmet from 'helmet';
 import {fileURLToPath} from 'node:url';
@@ -38,6 +43,7 @@ app.use('/api',(req,res,next)=>{
   }next();
 });
 app.get('/api/health',(_req,res)=>res.json({ok:true,app:'Luma',database:'mysql',chat:'groq',features:{attendance:true,attendanceHistory:true,vacationRequests:true,schedules:true}}));
+app.use('/api/activity',activity);app.use('/api/calendar',calendar);app.use('/api/security',security);app.use('/api/hr-dashboard',hrDashboard);app.use('/api/document-jobs',documentJobs);
 app.use('/api/auth/google',googleAuth);
 app.use('/api/schedules',schedules);app.use('/api/vacations',vacations);app.use('/api/attendance',attendance);app.use('/api/profile',profile);app.use('/api/auth',auth);app.use('/api/users',users);app.use('/api/roles',roles);app.use('/api/documents',docs);app.use('/api/drive',drive);app.use('/api/chat',chat);app.use('/api/usage',usage);
 app.use('/api',(_req,_res,next)=>next(new HttpError(404,'Ruta no encontrada')));
