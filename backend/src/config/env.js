@@ -14,7 +14,7 @@ export const env = {
   embeddingProvider:process.env.EMBEDDING_PROVIDER||'local',
   voyageKey:process.env.VOYAGE_API_KEY||'',
   voyageModel:process.env.VOYAGE_MODEL||'voyage-4-lite',
-  googleClientId:process.env.GOOGLE_CLIENT_ID||'',
+  googleClientId:process.env.GOOGLE_CLIENT_ID||'902652626944-svt8298m9edpviujiejn9nk7fpgukhju.apps.googleusercontent.com',
   googleCredentials:process.env.GOOGLE_APPLICATION_CREDENTIALS||'./credentials/service-account.json',
   syncCron:process.env.SYNC_CRON||'*/5 * * * *',
   uploadLimit:Math.max(1,Number(process.env.MAX_UPLOAD_MB||1024))*1024*1024
