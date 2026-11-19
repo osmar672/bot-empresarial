@@ -116,7 +116,8 @@
   color: #71521c;
 }
 .tab-bar {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
 }
 @media (max-width: 640px) {
   .people-card {
