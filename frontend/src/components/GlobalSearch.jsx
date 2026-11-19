@@ -138,7 +138,7 @@ export default function GlobalSearch({ onNavigate }) {
                           onClick={() => {
                             dialog.current.close();
                             onNavigate(
-                              r.target,
+                              type === "requests" && r.target === "profile" ? "requests" : r.target,
                               r.target === "chat" ? r.id : null,
                             );
                           }}
