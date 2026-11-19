@@ -1,0 +1,15 @@
+export const auditLabels = {
+  "users.role_changed": "Cambio de rol",
+  "vacations.requested": "Solicitud de vacaciones",
+  "vacations.approved": "Vacaciones aprobadas",
+  "vacations.rejected": "Vacaciones rechazadas",
+  "documents.uploaded": "Documento cargado",
+  "documents.version_uploaded": "Nueva versión",
+  "documents.deleted": "Documento eliminado",
+  "documents.access_changed": "Permisos de documento",
+  "account.password_reset": "Contraseña restablecida",
+  "account.email_verified": "Correo verificado",
+  "account.sessions_revoked": "Sesiones cerradas",
+  "calendar.holiday_created": "Feriado agregado",
+  "calendar.holiday_deleted": "Feriado eliminado",
+};
