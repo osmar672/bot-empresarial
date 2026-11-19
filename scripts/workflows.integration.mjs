@@ -1,3 +1,4 @@
+import { mailConfiguration } from "../backend/src/services/mailTransport.js";
 import express from "express";
 import { createGoogleAuthRouter } from "../backend/src/routes/google-auth.routes.js";
 import assert from "node:assert/strict";
@@ -17,8 +18,8 @@ import {
   createDocument,
   indexDocument,
 } from "../backend/src/services/documents.service.js";
-if (process.env.RESEND_API_KEY)
-  throw new Error("Unset RESEND_API_KEY: no real mail during tests");
+if (mailConfiguration().configured)
+  throw new Error("Disable the configured mail provider: no real mail during tests");
 await ensureWorkflows();
 const company = randomUUID(),
   other = randomUUID(),

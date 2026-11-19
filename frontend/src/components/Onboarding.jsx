@@ -51,6 +51,7 @@ export default function Onboarding({ review = false }) {
       setBusy(false);
     }
   }
+  if (!review && !error && !items?.length) return null;
   return (
     <section className="card people-card">
       <div className="eyebrow">BIENVENIDA AL EQUIPO</div>

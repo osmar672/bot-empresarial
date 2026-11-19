@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { one, pool } from "../backend/src/db/pool.js";
 import { env } from "../backend/src/config/env.js";
-import { mailConfigured } from "../backend/src/services/mail.service.js";
+import { mailConfiguration } from "../backend/src/services/mailTransport.js";
+import { driveConfiguration } from "../backend/src/services/drive.service.js";
 import {
   requestAccountLink,
   sendSecurityMail,
@@ -10,21 +11,22 @@ try {
   const args = process.argv.slice(2),
     send = args.includes("--send"),
     index = args.indexOf("--to");
-  const configured = {
-    RESEND_API_KEY: Boolean(process.env.RESEND_API_KEY),
-    MAIL_FROM: Boolean(process.env.MAIL_FROM),
-    PUBLIC_APP_URL: Boolean(process.env.PUBLIC_APP_URL),
-  };
-  console.log("Configuración presente (sin mostrar secretos):", configured);
+  const mail = mailConfiguration();
+  const hasPublicUrl = Boolean(process.env.PUBLIC_APP_URL);
+  console.log("Configuración local (sin mostrar secretos):", {
+    googleLogin: Boolean(env.googleClientId),
+    googleDrive: driveConfiguration().status,
+    mailProvider: mail.provider,
+    mailConfigured: mail.configured,
+    missingOrInvalid: [...mail.missing, ...(!hasPublicUrl ? ["PUBLIC_APP_URL"] : [])],
+  });
   if (!send) {
     console.log(
       "Para enviar enlaces reales a una cuenta existente: npm run mail:test -- --to tu-correo --send",
     );
   } else {
-    if (!mailConfigured() || !configured.PUBLIC_APP_URL)
-      throw new Error(
-        "Configura RESEND_API_KEY, MAIL_FROM y PUBLIC_APP_URL en backend/.env o en el entorno privado antes del envío.",
-      );
+    if (!mail.configured || !hasPublicUrl)
+      throw new Error("Completa la configuración indicada antes del envío.");
     const url = new URL(process.env.PUBLIC_APP_URL);
     if (
       url.username ||
@@ -54,7 +56,7 @@ try {
       const sent = await sendSecurityMail(result.mailId);
       if (sent.status !== "sent")
         throw new Error(
-          "El proveedor no confirmó el envío. Revisa el remitente verificado y el estado de correo.",
+          "El proveedor no confirmó el envío. Revisa las credenciales y los permisos del proveedor seleccionado.",
         );
       console.log(
         purpose === "verify"

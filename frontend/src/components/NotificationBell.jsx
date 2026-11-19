@@ -4,6 +4,11 @@ import { Bell, CheckCheck, X } from "lucide-react";
 import { api } from "../services/api.js";
 import { Notice, Spinner } from "./UI.jsx";
 import "../styles/operations.css";
+function opensRequests(item) {
+  return item.target === "profile" &&
+    (item.kind === "hr" || item.title === "RH respondió tu corrección de asistencia");
+}
+
 export default function NotificationBell({ onNavigate }) {
   const { session } = useAuth();
   const preference = "luma.browserNotifications." + session.user.id;
@@ -98,17 +103,19 @@ export default function NotificationBell({ onNavigate }) {
         method: "PATCH",
       });
       dialog.current.close();
+      const target = opensRequests(item) ? "requests" : item.target;
       onNavigate(
         [
           "profile",
+          "requests",
           "hr",
           "documents",
           "calendar",
           "security",
           "policies",
           "knowledge",
-        ].includes(item.target)
-          ? item.target
+        ].includes(target)
+          ? target
           : "profile",
       );
       await load();
@@ -223,7 +230,7 @@ export default function NotificationBell({ onNavigate }) {
                     onClick={() => read(item)}
                   >
                     <strong>{item.title}</strong>
-                    <span>{item.body}</span>
+                    <span>{opensRequests(item) ? item.body.replace("Mi perfil", "Mis solicitudes") : item.body}</span>
                     <small>
                       {new Intl.DateTimeFormat("es-CR", {
                         dateStyle: "medium",

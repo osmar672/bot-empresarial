@@ -62,7 +62,7 @@ export default function AttendanceSession({data,busy,onMark,compact=false}){
 
   <button className={'btn session-mark '+(active?'session-checkout':'btn-primary')} disabled={busy} onClick={()=>onMark(active?'out':'in')}>
     {active?<LogOut size={19}/>:<LogIn size={19}/>}
-    <span>{busy?'Guardando marcación…':active?'Finalizar jornada · Marcar salida':'Comenzar jornada · Marcar entrada'}</span>
+    <span>{busy?'Guardando marcación…':active?'Marcar salida':'Marcar entrada'}</span>
   </button>
   <p className="session-footnote"><Check size={12}/> Cada marcación se guarda con la hora del servidor.</p>
  </div>;

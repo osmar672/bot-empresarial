@@ -16,7 +16,7 @@ const date = (value) =>
     timeStyle: "short",
     timeZone: "America/Costa_Rica",
   }).format(new Date(value));
-export default function PermissionRequests({ review = false }) {
+export default function PermissionRequests({ review = false, showForm = true }) {
   const { session } = useAuth(),
     [items, setItems] = useState(null),
     [error, setError] = useState(null),
@@ -47,21 +47,20 @@ export default function PermissionRequests({ review = false }) {
     <section className="card people-card">
       <div className="section-heading">
         <div>
-          <div className="eyebrow">TIEMPO Y FLEXIBILIDAD</div>
           <h2>
             {review
               ? "Revisar permisos por horas"
-              : "Solicitar un permiso por horas"}
+              : "Permisos por horas"}
           </h2>
-          <p>
+          {(review || showForm) && <p>
             Citas médicas, asuntos personales y otras ausencias. Las horas se
             registran en Costa Rica; RH decide sobre cada solicitud.
-          </p>
+          </p>}
         </div>
         <Clock size={24} />
       </div>
       <Notice error={error} success={success} />
-      {!review && (
+      {!review && showForm && (
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -134,7 +133,7 @@ export default function PermissionRequests({ review = false }) {
           </button>
         </form>
       )}
-      <h3>{review ? "Solicitudes del equipo" : "Mis permisos"}</h3>
+      {review && <h3>Solicitudes del equipo</h3>}
       {!items ? (
         error ? (
           <p className="ops-empty">

@@ -16,7 +16,7 @@ const date = (value) =>
         timeZone: "America/Costa_Rica",
       }).format(new Date(value))
     : "Sin marcación";
-export default function Corrections() {
+export default function Corrections({ showForm = true }) {
   const [entries, setEntries] = useState([]),
     [items, setItems] = useState(null),
     [entry, setEntry] = useState(""),
@@ -50,14 +50,13 @@ export default function Corrections() {
   }
   return (
     <section className="card people-card">
-      <div className="eyebrow">TU ASISTENCIA</div>
-      <h2>Solicitar corrección de marcaciones</h2>
-      <p>
+      <h2>Correcciones de marcaciones</h2>
+      {showForm && <p>
         ¿Olvidaste una entrada o salida? Propón el horario real de una jornada
         pasada. RH revisará el motivo y conservará el registro original.
-      </p>
+      </p>}
       <Notice error={error} success={success} />
-      <form
+      {showForm && <form
         onSubmit={(e) => {
           e.preventDefault();
           const reason = new FormData(e.currentTarget).get("reason");
@@ -130,8 +129,7 @@ export default function Corrections() {
         <button className="btn btn-primary" disabled={busy}>
           Solicitar revisión de RH
         </button>
-      </form>
-      <h3>Mis correcciones</h3>
+      </form>}
       {!items ? (
         !error && <Spinner />
       ) : !items.length ? (
