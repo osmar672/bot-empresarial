@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { auditLabels } from "../services/auditLabels.js";
 import { api } from "../services/api.js";
 import { Notice, Spinner } from "../components/UI.jsx";
 export default function Audit() {
@@ -16,21 +17,6 @@ export default function Audit() {
   useEffect(() => {
     api("/chat/feedback-summary").then(setFeedback).catch(setError);
   }, []);
-  const labels = {
-    "users.role_changed": "Cambio de rol",
-    "vacations.requested": "Solicitud de vacaciones",
-    "vacations.approved": "Vacaciones aprobadas",
-    "vacations.rejected": "Vacaciones rechazadas",
-    "documents.uploaded": "Documento cargado",
-    "documents.version_uploaded": "Nueva versión",
-    "documents.deleted": "Documento eliminado",
-    "documents.access_changed": "Permisos de documento",
-    "account.password_reset": "Contraseña restablecida",
-    "account.email_verified": "Correo verificado",
-    "account.sessions_revoked": "Sesiones cerradas",
-    "calendar.holiday_created": "Feriado agregado",
-    "calendar.holiday_deleted": "Feriado eliminado",
-  };
   return (
     <div className="page ops-page">
       <div className="page-heading">
@@ -85,7 +71,7 @@ export default function Audit() {
               }}
             >
               <option value="">Todas</option>
-              {Object.entries(labels).map(([key, label]) => (
+              {Object.entries(auditLabels).map(([key, label]) => (
                 <option key={key} value={key}>
                   {label}
                 </option>
@@ -126,7 +112,7 @@ export default function Audit() {
                           }).format(new Date(item.created_at))}
                         </td>
                         <td>{item.actor || detail?.actorName || "Sistema"}</td>
-                        <td>{labels[item.action] || item.action}</td>
+                        <td>{auditLabels[item.action] || item.action}</td>
                         <td>
                           {Object.entries(detail || {})
                             .filter(([key]) => key !== "actorName")

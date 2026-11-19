@@ -31,23 +31,12 @@ function availableManagementTools(role) {
  return role === 'rrhh' || role.startsWith('rrhh_') ? managementTools.slice(0, 1) : [];
 }
 
-export function Administration({role, onNavigate}) {
- return <div className="page workspace-page">
-  <h1>Administración</h1>
-  <nav className="workspace-tool-list" aria-label="Herramientas de administración">
-   {availableManagementTools(role).map(({id,label,icon:Icon}) =>
-    <button className="btn btn-secondary" key={id} onClick={()=>onNavigate(id)}>
-     <Icon size={18}/>{label}<ChevronRight size={16}/>
-    </button>
-   )}
-  </nav>
- </div>;
-}
 export default function Shell({tab,setTab,children}){
  const {session,accountNotice,dismissAccountNotice,dismissAttendanceOffer}=useAuth();const {requestLogout}=useAttendance();const [open,setOpen]=useState(false);
  const mainScroll=useRef(null);
  const accountMenu=useRef(null);
  const management=availableManagementTools(session.user.role);
+ const canReturnToAdministration=session.user.role==='admin'&&(tab==='documents'||[...management,...workspaceTools].some(item=>item.id===tab));
  const pageLabel=[...primaryTabs,...workspaceTools,...management,
   {id:'requests',label:'Mis solicitudes'},{id:'security',label:'Seguridad'},
   {id:'administration',label:'Administración'}
@@ -79,7 +68,11 @@ export default function Shell({tab,setTab,children}){
    <InstallApp/>
    <header className="topbar">
     <button className="icon-button mobile-menu" aria-label="Abrir menú" aria-expanded={open} aria-controls="workspace-navigation" onClick={()=>setOpen(true)}><Menu size={21}/></button>
-    <div className="breadcrumbs"><strong>{pageLabel}</strong></div>
+    <div className="breadcrumbs">
+     {canReturnToAdministration&&<button className="text-button" onClick={()=>navigate('administration')}>Administración</button>}
+     {canReturnToAdministration&&<ChevronRight size={13} aria-hidden="true"/>}
+     <strong>{pageLabel}</strong>
+    </div>
     <div className="topbar-right">
      <GlobalSearch onNavigate={navigate}/>
      <NotificationBell onNavigate={navigate}/>
@@ -95,7 +88,7 @@ export default function Shell({tab,setTab,children}){
        <small>{session.company?.name}</small>
        <button onClick={()=>navigate('requests')}>Mis solicitudes</button>
        {workspaceTools.map(({id,label})=><button key={id} onClick={()=>navigate(id)}>{label}</button>)}
-       {management.length>0&&<button onClick={()=>navigate('administration')}>Administración</button>}
+       {management.length>0&&<button onClick={()=>navigate(session.user.role==='admin'?'administration':'hr')}>{session.user.role==='admin'?'Administración':'Solicitudes RH'}</button>}
        <button onClick={()=>navigate('security')}>Seguridad</button>
        <a href="/guia-practica.pdf" target="_blank" rel="noreferrer">Guía de la práctica</a>
        <button onClick={()=>{accountMenu.current.open=false;requestLogout();}}><LogOut size={16}/>Cerrar sesión</button>
