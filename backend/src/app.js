@@ -1,3 +1,7 @@
+import reports from './routes/reports.routes.js';
+import search from './routes/search.routes.js';
+import permissions from './routes/permissions.routes.js';
+import leavePolicy from './routes/leave-policy.routes.js';
 import activity from './routes/activity.routes.js';
 import calendar from './routes/calendar.routes.js';
 import security from './routes/security.routes.js';
@@ -43,6 +47,8 @@ app.use('/api',(req,res,next)=>{
   }next();
 });
 app.get('/api/health',(_req,res)=>res.json({ok:true,app:'Luma',database:'mysql',chat:'groq',features:{attendance:true,attendanceHistory:true,vacationRequests:true,schedules:true}}));
+app.use('/api/reports',reports);app.use('/api/search',search);
+app.use('/api/permissions',permissions);app.use('/api/leave-policy',leavePolicy);
 app.use('/api/activity',activity);app.use('/api/calendar',calendar);app.use('/api/security',security);app.use('/api/hr-dashboard',hrDashboard);app.use('/api/document-jobs',documentJobs);
 app.use('/api/auth/google',googleAuth);
 app.use('/api/schedules',schedules);app.use('/api/vacations',vacations);app.use('/api/attendance',attendance);app.use('/api/profile',profile);app.use('/api/auth',auth);app.use('/api/users',users);app.use('/api/roles',roles);app.use('/api/documents',docs);app.use('/api/drive',drive);app.use('/api/chat',chat);app.use('/api/usage',usage);

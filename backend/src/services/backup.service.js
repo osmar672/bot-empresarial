@@ -48,10 +48,12 @@ async function* dumpDatabase(cx) {
       .sort((a, b) => a.Seq_in_index - b.Seq_in_index)
       .map((k) => "`" + k.Column_name.replace(/`/g, "``") + "`")
       .join(",");
+    const [fields]=await cx.query('SHOW COLUMNS FROM `'+table+'`');
+    const writable=fields.filter(field=>!/(?:VIRTUAL|STORED) GENERATED/.test(String(field.Extra))).map(field=>'`'+field.Field.replace(/`/g,'``')+'`').join(',');
     let offset = 0;
     while (true) {
       const [rows] = await cx.query(
-        "SELECT * FROM `" +
+        "SELECT "+writable+" FROM `" +
           table +
           "`" +
           (order ? " ORDER BY " + order : "") +

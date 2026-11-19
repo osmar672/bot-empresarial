@@ -134,6 +134,9 @@ async function progress(job, value, stage) {
 }
 export async function processDocumentJob(job) {
   try {
+    let extraction=null;
+    const extractionOptions={onMetadata:meta=>{extraction=meta;},onProgress:({page,total,ocrPages})=>progress(job,5+Math.floor(page/total*25),(ocrPages?'Reconocimiento OCR':'Leyendo texto')+' · página '+page+' de '+total)};
+    const saveExtraction=async(cx,id)=>{if(extraction)await cx.execute('INSERT INTO pb_document_extractions(document_id,company_id,method,pages,ocr_pages,confidence) VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE method=VALUES(method),pages=VALUES(pages),ocr_pages=VALUES(ocr_pages),confidence=VALUES(confidence),updated_at=UTC_TIMESTAMP(3)',[id,job.company_id,extraction.method,extraction.pages,extraction.ocrPages,extraction.confidence]);};
     await progress(job, 5, "Leyendo documento");
     if (job.kind === "reindex") {
       const original = await one(
@@ -144,9 +147,10 @@ export async function processDocumentJob(job) {
       if (original.storage_path) {
         const text = await extractFile(
           await fs.readFile(location(original.storage_path)),
-          original.mime_type,
+          original.mime_type, extractionOptions,
         );
         await indexDocument(job.company_id, job.document_id, text, {
+          onIndexed:cx=>saveExtraction(cx,job.document_id),
           onProgress: (ratio) =>
             progress(
               job,
@@ -164,7 +168,7 @@ export async function processDocumentJob(job) {
         throw new Error("Archivo de trabajo no disponible");
       const text = await extractFile(
         await fs.readFile(location(job.storage_path)),
-        job.mime_type,
+        job.mime_type, extractionOptions,
       );
       await progress(job, 30, "Texto extraído. Preparando índice");
       let documentId = job.document_id;
@@ -190,6 +194,7 @@ export async function processDocumentJob(job) {
         onProgress: (ratio) =>
           progress(job, 35 + Math.floor(ratio * 60), "Indexando fragmentos"),
         onIndexed: async (cx) => {
+          await saveExtraction(cx,documentId);
           const [old] = await cx.execute(
             "SELECT storage_path,name,mime_type,size_bytes,allowed_roles FROM pb_documents WHERE id=? AND company_id=? FOR UPDATE",
             [documentId, job.company_id],

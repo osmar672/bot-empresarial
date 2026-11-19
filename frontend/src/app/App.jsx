@@ -1,3 +1,4 @@
+import '../styles/people-tools.css';
 import { AccountLinkAction } from "../components/AuthRecovery.jsx";
 
 import { AttendanceProvider } from "../context/AttendanceContext.jsx";
@@ -9,6 +10,7 @@ import Login from "../pages/Login.jsx";
 import Chat from "../pages/Chat.jsx";
 import Documents from "../pages/Documents.jsx";
 
+const Reports=lazy(()=>import("../pages/Reports.jsx"));
 const Users = lazy(() => import("../pages/Users.jsx"));
 const Usage = lazy(() => import("../pages/Usage.jsx"));
 const Calendar = lazy(() => import("../pages/Calendar.jsx"));
@@ -19,6 +21,7 @@ const Profile = lazy(() => import("../pages/Profile.jsx"));
 export default function App() {
   const { loading, session } = useAuth(),
     [tab, setTab] = useState("chat"),
+    [openConversation,setOpenConversation]=useState(null),
     [accountAction, setAccountAction] = useState(() => {
       const q = new URLSearchParams(window.location.hash.slice(1));
       const type = q.get("account"),
@@ -66,7 +69,7 @@ export default function App() {
     session.user.role === "rrhh" ||
     session.user.role.startsWith("rrhh_");
   const page =
-    tab === "calendar" ? (
+    tab === "reports" ? <Reports/> : tab === "calendar" ? (
       <Calendar />
     ) : tab === "security" ? (
       <Security />
@@ -83,11 +86,11 @@ export default function App() {
     ) : tab === "usage" && session.user.role === "admin" ? (
       <Usage />
     ) : (
-      <Chat onDocuments={() => setTab("documents")} />
+      <Chat key={openConversation||"chat"} initialConversation={openConversation} onDocuments={() => setTab("documents")} />
     );
   return (
     <AttendanceProvider key={session.user.id}>
-      <Shell tab={tab} setTab={setTab}>
+      <Shell tab={tab} setTab={(next,id=null)=>{setOpenConversation(id);setTab(next);}}>
         <Suspense fallback={<Spinner label="Abriendo sección…" />}>
           {page}
         </Suspense>

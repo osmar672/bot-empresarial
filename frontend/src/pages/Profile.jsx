@@ -1,3 +1,5 @@
+import PermissionRequests from '../components/PermissionRequests.jsx';
+import {LeaveBalance} from '../components/LeavePolicy.jsx';
 import ProfileStudio, {
   profileDefaults,
   sectionNames,
@@ -296,7 +298,7 @@ export default function Profile() {
             </div>
           </div>
           <AttendanceCard />
-          <VacationCard />
+          <LeaveBalance/><VacationCard /><PermissionRequests/>
           <div className="profile-metrics">
             {[
               [

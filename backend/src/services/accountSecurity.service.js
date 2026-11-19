@@ -121,7 +121,10 @@ export async function queueAccountLink(user, purpose, cx) {
       `Hola.\n\n${purpose === "reset" ? "Para elegir una nueva contraseña, abre este enlace en los próximos 30 minutos:" : "Para verificar tu correo, abre este enlace en las próximas 24 horas:"}\n\n${url}\n\nSi no solicitaste este mensaje, puedes ignorarlo. No compartas el enlace.`,
     ],
   );
-  return { status: mailConfigured() ? "pending" : "pending_configuration" };
+  return {
+    status: mailConfigured() ? "pending" : "pending_configuration",
+    mailId,
+  };
 }
 export async function requestAccountLink(userId, purpose) {
   return transaction(async (cx) => {
@@ -199,6 +202,41 @@ export async function consumeAccountToken(token, purpose, password) {
     );
   });
 }
+export async function sendSecurityMail(
+  id,
+  { send = sendTransactionalMail } = {},
+) {
+  if (send === sendTransactionalMail && !mailConfigured())
+    return { status: "pending_configuration" };
+  const mail = await transaction(async (cx) => {
+    const [rows] = await cx.execute(
+      "SELECT * FROM pb_security_mail WHERE id=? AND state='pending' AND next_attempt_at<=UTC_TIMESTAMP(3) FOR UPDATE",
+      [id],
+    );
+    if (!rows.length) return null;
+    await cx.execute(
+      "UPDATE pb_security_mail SET state='processing',attempts=attempts+1,updated_at=UTC_TIMESTAMP(3) WHERE id=?",
+      [id],
+    );
+    return rows[0];
+  });
+  if (!mail) return { status: "not_pending" };
+  try {
+    await send(mail);
+    await run(
+      "UPDATE pb_security_mail SET state='sent',sent_at=UTC_TIMESTAMP(3),last_error=NULL,updated_at=UTC_TIMESTAMP(3) WHERE id=?",
+      [id],
+    );
+    return { status: "sent" };
+  } catch {
+    const state = mail.attempts >= 4 ? "failed" : "pending";
+    await run(
+      "UPDATE pb_security_mail SET state=?,last_error='MAIL_DELIVERY_FAILED',next_attempt_at=TIMESTAMPADD(MINUTE,5,UTC_TIMESTAMP(3)),updated_at=UTC_TIMESTAMP(3) WHERE id=?",
+      [state, id],
+    );
+    return { status: state };
+  }
+}
 export function startSecurityMailWorker() {
   let running = false;
   const tick = async () => {
@@ -213,31 +251,7 @@ export function startSecurityMailWorker() {
         "SELECT id FROM pb_security_mail WHERE state='pending' AND next_attempt_at<=UTC_TIMESTAMP(3) ORDER BY next_attempt_at LIMIT 10",
       );
       for (const item of mails) {
-        const mail = await transaction(async (cx) => {
-          const [rows] = await cx.execute(
-            "SELECT * FROM pb_security_mail WHERE id=? AND state='pending' FOR UPDATE",
-            [item.id],
-          );
-          if (!rows.length) return null;
-          await cx.execute(
-            "UPDATE pb_security_mail SET state='processing',attempts=attempts+1,updated_at=UTC_TIMESTAMP(3) WHERE id=?",
-            [item.id],
-          );
-          return rows[0];
-        });
-        if (!mail) continue;
-        try {
-          await sendTransactionalMail(mail);
-          await run(
-            "UPDATE pb_security_mail SET state='sent',sent_at=UTC_TIMESTAMP(3),updated_at=UTC_TIMESTAMP(3) WHERE id=?",
-            [mail.id],
-          );
-        } catch {
-          await run(
-            "UPDATE pb_security_mail SET state=?,last_error='MAIL_DELIVERY_FAILED',next_attempt_at=TIMESTAMPADD(MINUTE,5,UTC_TIMESTAMP(3)),updated_at=UTC_TIMESTAMP(3) WHERE id=?",
-            [mail.attempts >= 4 ? "failed" : "pending", mail.id],
-          );
-        }
+        await sendSecurityMail(item.id);
       }
     } catch {
       console.error("No se pudo procesar el correo de seguridad.");

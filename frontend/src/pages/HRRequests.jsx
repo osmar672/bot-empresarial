@@ -1,3 +1,5 @@
+import PermissionRequests from '../components/PermissionRequests.jsx';
+import LeavePolicy from '../components/LeavePolicy.jsx';
 import HRDashboard from "../components/HRDashboard.jsx";
 import { useEffect, useState } from "react";
 import { api, HTTP_STATUS } from "../services/api.js";
@@ -69,8 +71,9 @@ export default function HRRequests() {
         >
           Solicitudes de vacaciones
         </button>
+        <button className={tab==="permissions"?"active":""} onClick={()=>setTab("permissions")}>Permisos por horas</button><button className={tab==="policy"?"active":""} onClick={()=>setTab("policy")}>Reglas y saldos</button>
       </div>
-      {tab === "dashboard" ? (
+      {tab === "policy" ? <LeavePolicy/> : tab === "permissions" ? <PermissionRequests review/> : tab === "dashboard" ? (
         <HRDashboard />
       ) : (
         <>

@@ -117,7 +117,7 @@ router.post(
     );
     if (security?.email_verified_at) return res.json({ status: "verified" });
     const result = await requestAccountLink(req.user.id, "verify");
-    res.status(202).json(result);
+    res.status(202).json({status:result.status});
   }),
 );
 router.post(

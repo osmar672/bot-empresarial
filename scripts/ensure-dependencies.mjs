@@ -24,7 +24,7 @@ export async function missingDependencies(){
   }
  }
  // Also exercise the entry points/native bindings used by the reported failures.
- for(const name of scope==='frontend'?['vite']:scope==='backend'?['mysql2/promise','sharp']:['vite','mysql2/promise','sharp']){
+ for(const name of scope==='frontend'?['vite']:scope==='backend'?['mysql2/promise','sharp','@napi-rs/canvas']:['vite','mysql2/promise','sharp','@napi-rs/canvas']){
   try{
    const require=createRequire(path.join(root,name==='vite'?'frontend':'backend','package.json'));
    // A separate process releases native DLLs before npm ci replaces files on Windows.

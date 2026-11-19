@@ -30,7 +30,7 @@ import {api, chatStream,HTTP_STATUS} from '../services/api.js';
 import {useAuth} from '../context/AuthContext.jsx';
 import {Notice,Spinner} from '../components/UI.jsx';
 const examples=['¿Cuántos días de vacaciones tenemos?','¿Cómo solicito un reembolso?','¿Cuál es la política de teletrabajo?'];
-export default function Chat({onDocuments}){
+export default function Chat({onDocuments,initialConversation}){
  const confirm=useConfirm();
  const [activity,setActivity]=useState('idle');
  const [selectedDocuments,setSelectedDocuments]=useState([]);
@@ -53,7 +53,7 @@ export default function Chat({onDocuments}){
  function toMessages(rows){return rows.slice().reverse().flatMap(m=>[{role:'user',text:m.question,id:m.id+'q'},{role:'assistant',text:m.answer||(m.state==='error'?'No se pudo completar esta respuesta.':m.state==='processing'?'Respuesta interrumpida o en proceso.':''),id:m.id,messageId:m.id,feedbackRating:m.feedback_rating,sources:m.sources||[]}]);}
  async function loadHistory(id,before=null){voice.stopAll();const request=++historyRequest.current;if(before&&feed.current){restoreScroll.current={height:feed.current.scrollHeight,top:feed.current.scrollTop};followTail.current=false;}else{restoreScroll.current=null;followTail.current=true;}setLoading(true);setError('');try{const query=new URLSearchParams();if(id)query.set('conversationId',id);if(before)query.set('before',before);const data=await api('/chat/history?'+query);if(request!==historyRequest.current)return;setOlder(data.messages.length===200?data.messages.at(-1).id:null);setMessages(m=>before?[...toMessages(data.messages),...m]:toMessages(data.messages));}catch(e){setError(e);}finally{if(request===historyRequest.current)setLoading(false);}}
  async function refreshThreads(){const data=await api('/chat/conversations');setThreads(data.conversations);}
- useEffect(()=>{let ignore=false;api('/chat/conversations').then(data=>{if(!ignore){setThreads(data.conversations);const id=data.conversations[0]?.id||'';setConversationId(id);if(id)loadHistory(id);else setLoading(false);}}).catch(e=>{if(!ignore){setError(e);setLoading(false);}});return()=>{ignore=true;controller.current?.abort();};},[]);
+ useEffect(()=>{let ignore=false;api('/chat/conversations').then(data=>{if(!ignore){setThreads(data.conversations);const id=initialConversation||data.conversations[0]?.id||'';setConversationId(id);if(id)loadHistory(id);else setLoading(false);}}).catch(e=>{if(!ignore){setError(e);setLoading(false);}});return()=>{ignore=true;controller.current?.abort();};},[]);
  useLayoutEffect(()=>{
   const element=feed.current;if(!element||loading)return;
   // The empty welcome screen starts at the top, even when account notices reduce its height.

@@ -1,3 +1,4 @@
+import {ensurePeopleTools} from './db/bootstrapPeopleTools.js';
 import {ensureOperations} from './db/bootstrapOperations.js';
 import {startDocumentWorker} from './services/documentJobs.service.js';
 import {startSecurityMailWorker} from './services/accountSecurity.service.js';
@@ -16,6 +17,7 @@ try{
   catch(error){if(error.code==='ER_NO_SUCH_TABLE')throw new Error('Faltan las tablas de PolicyBot. Desde la carpeta principal ejecuta: npm run db:migrate');throw error;}
   await ensureProfileFeatures();
   await ensureOperations();
+  await ensurePeopleTools();
   const mailSchema=await ensureMailOutbox();
   if(mailSchema.created)console.log('Tabla pb_mail_outbox creada automáticamente.');
   const server=app.listen(env.port,()=>console.log(`PolicyBot API http://127.0.0.1:${env.port}`));

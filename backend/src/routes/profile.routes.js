@@ -1,3 +1,4 @@
+import {setLeaveBalance} from '../services/leaveBalance.service.js';
 import {getAppearance,saveAppearance} from '../services/profilePreferences.service.js';
 import {getPunctuality} from '../services/punctuality.service.js';
 import {Router} from 'express';
@@ -5,13 +6,13 @@ import multer from 'multer';
 import {randomUUID} from 'node:crypto';
 import {normalizePhoto,photoUrl} from '../services/profilePhoto.service.js';
 import {z} from 'zod';
-import {one,run} from '../db/pool.js';
+import {one,run,transaction} from '../db/pool.js';
 import {authenticate,adminOnly} from '../middlewares/auth.js';
 import {asyncHandler} from '../middlewares/error.js';
 import {HttpError} from '../utils/errors.js';
 import {idSchema} from '../utils/validation.js';
 const router=Router();router.use(authenticate);
-const schema=z.object({job_title:z.string().trim().max(150).nullable(),department:z.string().trim().max(100).nullable(),vacation_days:z.number().min(0).max(99999).nullable(),work_schedule:z.string().trim().max(255).nullable(),rest_days:z.string().trim().max(150).nullable(),start_date:z.string().date().nullable()}).strict();
+const schema=z.object({job_title:z.string().trim().max(150).nullable(),department:z.string().trim().max(100).nullable(),vacation_days:z.number().min(0).max(99999).refine(n=>Math.abs(Math.round(n*100)-n*100)<1e-8,'Usa hasta dos decimales').nullable(),work_schedule:z.string().trim().max(255).nullable(),rest_days:z.string().trim().max(150).nullable(),start_date:z.string().date().nullable()}).strict();
 const uploadPhoto=multer({storage:multer.memoryStorage(),limits:{fileSize:5*1024*1024,files:1,fields:0}}).single('photo');
 router.put('/photo',uploadPhoto,asyncHandler(async(req,res)=>{
  if(!req.file)throw new HttpError(400,'Selecciona una foto');
@@ -54,8 +55,13 @@ router.get('/:id',adminOnly,asyncHandler(async(req,res)=>{
 }));
 router.put('/:id',adminOnly,asyncHandler(async(req,res)=>{
  const id=idSchema.parse(req.params.id),data=schema.parse(req.body);
- const user=await one('SELECT id FROM pb_users WHERE id=? AND company_id=?',[id,req.companyId]);if(!user)throw new HttpError(404,'Colaborador no encontrado');
- await run(`INSERT INTO pb_employee_profiles(user_id,company_id,job_title,department,vacation_days,work_schedule,rest_days,start_date) VALUES (?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE job_title=VALUES(job_title),department=VALUES(department),vacation_days=VALUES(vacation_days),work_schedule=VALUES(work_schedule),rest_days=VALUES(rest_days),start_date=VALUES(start_date)`,[id,req.companyId,data.job_title,data.department,data.vacation_days,data.work_schedule,data.rest_days,data.start_date]);
+ await transaction(async cx=>{
+  const [users]=await cx.execute('SELECT id FROM pb_users WHERE id=? AND company_id=? FOR UPDATE',[id,req.companyId]);if(!users.length)throw new HttpError(404,'Colaborador no encontrado');
+  const [profiles]=await cx.execute('SELECT vacation_days FROM pb_employee_profiles WHERE user_id=? AND company_id=? FOR UPDATE',[id,req.companyId]);
+  if(data.vacation_days==null&&profiles[0]?.vacation_days!=null)throw new HttpError(400,'El saldo registrado debe ser numérico. Usa cero si no hay días disponibles.');
+  if(data.vacation_days!=null)await setLeaveBalance({companyId:req.companyId,userId:id,value:data.vacation_days,note:'Actualización de saldo desde perfil laboral',actorId:req.user.id},cx);
+  await cx.execute(`INSERT INTO pb_employee_profiles(user_id,company_id,job_title,department,work_schedule,rest_days,start_date) VALUES (?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE job_title=VALUES(job_title),department=VALUES(department),work_schedule=VALUES(work_schedule),rest_days=VALUES(rest_days),start_date=VALUES(start_date)`,[id,req.companyId,data.job_title,data.department,data.work_schedule,data.rest_days,data.start_date]);
+ });
  res.json({ok:true});
 }));
 export default router;
