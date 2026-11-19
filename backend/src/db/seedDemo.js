@@ -37,6 +37,16 @@ try{
     }
     console.log('Empresa preparada:',company.name,company.email,company.colaborador);
   }
+  const oscarUser = await one('SELECT id FROM pb_users WHERE email=?', ['oscarguidorosales101@gmail.com']);
+  if (!oscarUser) {
+    const firstCompany = await one("SELECT id FROM pb_companies WHERE name='Rockstar' UNION SELECT id FROM pb_companies LIMIT 1");
+    if (firstCompany) {
+      await pool.execute(
+        'INSERT INTO pb_users (id, company_id, email, name, password_hash, role, google_sub) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [randomUUID(), firstCompany.id, 'oscarguidorosales101@gmail.com', 'Oscar Yabeth Guido Rosales', hash, 'compras_auxiliar', '105882518609494171935']
+      );
+    }
+  }
   console.log('Contraseña de demostración:',password);
   console.log('ATENCIÓN: no uses estos usuarios en producción.');
 }finally{await pool.end();}

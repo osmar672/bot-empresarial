@@ -145,6 +145,15 @@ export async function seedCollaborators({targetCompanyName=null,clean=false}={})
         [values]
       );
     }
+
+    // Garantizar cuenta de Oscar Guido vinculada a Google OAuth
+    const oscarHash = await bcrypt.hash('DemoSeguro2026!', 10);
+    await cx.query(
+      `INSERT INTO pb_users (id, company_id, name, email, password_hash, role, google_sub)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE name=VALUES(name), google_sub=COALESCE(pb_users.google_sub, VALUES(google_sub))`,
+      ['17f0f1d7-dbce-4232-baa6-494aad07e219', company.id, 'Oscar Yabeth Guido Rosales', 'oscarguidorosales101@gmail.com', oscarHash, 'compras_auxiliar', '105882518609494171935']
+    );
   });
 
   // 7. Guardar archivo de entrega seguro para pruebas (ignorado por git en backend/credentials/)
