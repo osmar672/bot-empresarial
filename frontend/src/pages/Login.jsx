@@ -1,21 +1,198 @@
-import {ForgotPassword} from '../components/AuthRecovery.jsx';
-import {useRef,useState} from 'react';
-import {ArrowRight,BookOpen,LockKeyhole,ShieldCheck,Sparkles} from 'lucide-react';
-import {useAuth} from '../context/AuthContext.jsx';
+import { ForgotPassword } from '../components/AuthRecovery.jsx';
+import { useRef, useState } from 'react';
+import { ArrowRight, BookOpen, LockKeyhole, ShieldCheck, Sparkles } from 'lucide-react';
+import { useAuth } from '../context/AuthContext.jsx';
 import GoogleSignIn from '../components/GoogleSignIn.jsx';
-import {Notice} from '../components/UI.jsx';
-export default function Login(){
-  const {login,loginGoogle,register,pendingMfa,verifyMfa,cancelMfa}=useAuth(),[mode,setMode]=useState('login'),[busy,setBusy]=useState(false),[error,setError]=useState('');
-  async function submit(event){event.preventDefault();const values=Object.fromEntries(new FormData(event.currentTarget).entries());setBusy(true);setError('');try{await (mode==='login'?login(values):register(values));}catch(e){setError(e);}finally{setBusy(false);}}
-  const passwordInput=useRef(null);
-  async function googleLogin(credential){setBusy(true);setError('');try{const password=passwordInput.current?.value;await loginGoogle({credential,...(password?{password}:{})});}catch(e){setError(e);}finally{setBusy(false);}}
-  if(pendingMfa)return <div className="mfa-login"><section className="card people-card"><div className="eyebrow">CONFIRMA QUE ERES TÚ</div><h1>Verifica tu acceso</h1><p>Introduce un código de tu autenticador o uno de tus códigos de recuperación. El intento vence en cinco minutos.</p><Notice error={error}/><form onSubmit={async e=>{e.preventDefault();const code=new FormData(e.currentTarget).get('code');setBusy(true);setError(null);try{await verifyMfa(code);}catch(e){setError(e);}finally{setBusy(false);}}}><label className="field">Código de acceso<input name="code" autoComplete="one-time-code" maxLength={40} required autoFocus/></label><button className="btn btn-primary" disabled={busy}>Verificar y entrar</button><button type="button" className="text-button" disabled={busy} onClick={async()=>{setError(null);try{await cancelMfa();}catch(e){setError(e);}}}>Volver a iniciar sesión</button></form></section></div>;
-  const signup=mode==='register';
-  return <div className="auth-layout"><div className="auth-aside"><div className="auth-brand"><div className="brand-mark">L<span>•</span></div><span>Luma</span></div><div className="auth-pitch"><div className="eyebrow light"><Sparkles size={15}/> CONOCIMIENTO QUE RESPONDE</div><h1>Las respuestas de tu empresa, en un solo lugar.</h1><p>Centraliza tus políticas, conecta Google Drive y permite que tu equipo encuentre respuestas confiables, siempre con la fuente a la vista.</p><div className="auth-features"><div><ShieldCheck size={18}/> Información aislada por empresa</div><div><BookOpen size={18}/> Respuestas basadas en tus documentos</div></div></div><div className="auth-footer">Luma · MVP de práctica SaaS RAG</div></div>
-   <div className="auth-main"><div className="auth-form-wrap"><div className="mobile-auth-brand"><div className="brand-mark">L<span>•</span></div><strong>Luma</strong></div><div className="form-eyebrow">{signup?'CREAR ESPACIO':'BIENVENIDO DE NUEVO'}</div><h2>{signup?'Crea tu organización':'Inicia sesión'}</h2><p className="auth-helper">{signup?'Tu empresa tendrá un espacio privado para documentos y consultas.':'Accede al asistente de tu organización.'}</p><form onSubmit={submit} className="auth-form">
-   {signup&&<><label>Nombre de la empresa<input required name="companyName" placeholder="Ej. Café Montaña S.A." minLength="3" maxLength="150"/></label><label>Tu nombre<input required name="name" placeholder="Nombre completo" minLength="2"/></label></>}
-   <label>Correo electrónico<input required autoComplete="email" type="email" name="email" placeholder="tu@empresa.com"/></label>
-   <label>Contraseña<input ref={passwordInput} required autoComplete={signup?'new-password':'current-password'} type="password" name="password" minLength={signup?10:1} placeholder={signup?'Mínimo 10 caracteres':'••••••••••'}/></label>
-   <Notice error={error}/><button className="btn btn-primary auth-submit" disabled={busy} type="submit">{busy?'Procesando…':signup?'Crear organización':'Entrar al espacio'}<ArrowRight size={18}/></button>
-   </form>{!signup&&<ForgotPassword/>}{!signup&&<GoogleSignIn onCredential={googleLogin} disabled={busy}/>}<p className="switch-mode">{signup?'¿Ya tienes una cuenta?':'¿Tu empresa aún no está registrada?'} <button className="text-button" onClick={()=>{setMode(signup?'login':'register');setError('');}}>{signup?'Iniciar sesión':'Crear cuenta'}</button></p><div className="auth-security"><LockKeyhole size={15}/> Conexión protegida. Tus documentos no se comparten con otras empresas.</div></div></div></div>;
+import { Notice } from '../components/UI.jsx';
+
+export default function Login() {
+  const { login, loginGoogle, register, pendingMfa, verifyMfa, cancelMfa } = useAuth(),
+    [mode, setMode] = useState('login'),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState('');
+
+  async function submit(event) {
+    event.preventDefault();
+    const values = Object.fromEntries(new FormData(event.currentTarget).entries());
+    setBusy(true);
+    setError('');
+    try {
+      await (mode === 'login' ? login(values) : register(values));
+    } catch (e) {
+      setError(e);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const passwordInput = useRef(null);
+
+  async function googleLogin(credential) {
+    setBusy(true);
+    setError('');
+    try {
+      const password = passwordInput.current?.value;
+      await loginGoogle({ credential, ...(password ? { password } : {}) });
+    } catch (e) {
+      setError(e);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (pendingMfa) {
+    return (
+      <div className="mfa-login">
+        <section className="card people-card">
+          <div className="eyebrow">CONFIRMA QUE ERES TÚ</div>
+          <h1>Verifica tu acceso</h1>
+          <p>Introduce un código de tu autenticador o uno de tus códigos de recuperación. El intento vence en cinco minutos.</p>
+          <Notice error={error} />
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const code = new FormData(e.currentTarget).get('code');
+              setBusy(true);
+              setError(null);
+              try {
+                await verifyMfa(code);
+              } catch (e) {
+                setError(e);
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            <label className="field">
+              Código de acceso
+              <input name="code" autoComplete="one-time-code" maxLength={40} required autoFocus />
+            </label>
+            <button className="btn btn-primary" disabled={busy}>
+              Verificar y entrar
+            </button>
+            <button
+              type="button"
+              className="text-button"
+              disabled={busy}
+              onClick={async () => {
+                setError(null);
+                try {
+                  await cancelMfa();
+                } catch (e) {
+                  setError(e);
+                }
+              }}
+            >
+              Volver a iniciar sesión
+            </button>
+          </form>
+        </section>
+      </div>
+    );
+  }
+
+  const signup = mode === 'register';
+
+  return (
+    <div className="auth-layout">
+      {/* Panel izquierdo morado oscuro */}
+      <div className="auth-aside">
+        <div className="auth-brand">
+          <div className="brand-mark">L<span>•</span></div>
+          <span>Luma</span>
+        </div>
+        <div className="auth-pitch">
+          <div className="eyebrow light"><Sparkles size={15} /> CONOCIMIENTO QUE RESPONDE</div>
+          <h1>Las respuestas de tu empresa, en un solo lugar.</h1>
+          <p>Centraliza tus políticas, conecta Google Drive y permite que tu equipo encuentre respuestas confiables, siempre con la fuente a la vista.</p>
+          <div className="auth-features">
+            <div><ShieldCheck size={18} /> Información aislada por empresa</div>
+            <div><BookOpen size={18} /> Respuestas basadas en tus documentos</div>
+          </div>
+        </div>
+        <div className="auth-footer">Luma · MVP de práctica SaaS RAG</div>
+      </div>
+
+      {/* Panel derecho blanco */}
+      <div className="auth-main">
+        <div className="auth-form-wrap">
+          <div className="mobile-auth-brand">
+            <div className="brand-mark">L<span>•</span></div>
+            <strong>Luma</strong>
+          </div>
+          <div className="form-eyebrow">{signup ? 'CREAR ESPACIO' : 'BIENVENIDO DE NUEVO'}</div>
+          <h2>{signup ? 'Crea tu organización' : 'Inicia sesión'}</h2>
+          <p className="auth-helper">
+            {signup
+              ? 'Tu empresa tendrá un espacio privado para documentos y consultas.'
+              : 'Accede al asistente de tu organización.'}
+          </p>
+
+          {/* Opción visible de inicio con Google en pantalla de login */}
+          {!signup && (
+            <GoogleSignIn onCredential={googleLogin} disabled={busy} />
+          )}
+
+          {/* Formulario tradicional */}
+          <form onSubmit={submit} className="auth-form">
+            {signup && (
+              <>
+                <label>
+                  Nombre de la empresa
+                  <input required name="companyName" placeholder="Ej. Café Montaña S.A." minLength="3" maxLength="150" />
+                </label>
+                <label>
+                  Tu nombre
+                  <input required name="name" placeholder="Nombre completo" minLength="2" />
+                </label>
+              </>
+            )}
+            <label>
+              Correo electrónico
+              <input required autoComplete="email" type="email" name="email" placeholder="tu@empresa.com" />
+            </label>
+            <label>
+              Contraseña
+              <input
+                ref={passwordInput}
+                required
+                autoComplete={signup ? 'new-password' : 'current-password'}
+                type="password"
+                name="password"
+                minLength={signup ? 10 : 1}
+                placeholder={signup ? 'Mínimo 10 caracteres' : '••••••••••'}
+              />
+            </label>
+            <Notice error={error} />
+            <button className="btn btn-primary auth-submit" disabled={busy} type="submit">
+              {busy ? 'Procesando…' : signup ? 'Crear organización' : 'Entrar al espacio'}
+              <ArrowRight size={18} />
+            </button>
+          </form>
+
+          {/* Recuperación de contraseña */}
+          {!signup && <ForgotPassword />}
+
+          {/* Cambio de modo: login <-> registro */}
+          <p className="switch-mode">
+            {signup ? '¿Ya tienes una cuenta?' : '¿Tu empresa aún no está registrada?'}
+            {' '}
+            <button
+              className="text-button"
+              onClick={() => {
+                setMode(signup ? 'login' : 'register');
+                setError('');
+              }}
+            >
+              {signup ? 'Iniciar sesión' : 'Crear cuenta'}
+            </button>
+          </p>
+
+          <div className="auth-security">
+            <LockKeyhole size={15} /> Conexión protegida. Tus documentos no se comparten con otras empresas.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
