@@ -1,3 +1,4 @@
+import { mailConfiguration } from "../backend/src/services/mailTransport.js";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
@@ -10,8 +11,8 @@ import {
   consumeAccountToken,
 } from "../backend/src/services/accountSecurity.service.js";
 import { initializeBackups } from "../backend/src/services/backupSetup.service.js";
-if (process.env.RESEND_API_KEY)
-  throw new Error("Unset RESEND_API_KEY: test must never send real mail");
+if (mailConfiguration().configured)
+  throw new Error("Disable the configured mail provider: test must never send real mail");
 const company = randomUUID(),
   user = randomUUID(),
   dir = await fs.mkdtemp(path.join(os.tmpdir(), "luma-security-test-"));

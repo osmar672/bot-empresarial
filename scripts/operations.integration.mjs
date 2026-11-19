@@ -1,3 +1,4 @@
+import { mailConfiguration } from "../backend/src/services/mailTransport.js";
 import assert from 'node:assert/strict';
 import {randomUUID,randomBytes} from 'node:crypto';
 import fs from 'node:fs/promises';
@@ -10,7 +11,7 @@ import {env} from '../backend/src/config/env.js';
 import {ensureOperations} from '../backend/src/db/bootstrapOperations.js';
 import {runDocumentQueue} from '../backend/src/services/documentJobs.service.js';
 import {createDatabaseBackup,readDatabaseBackup} from '../backend/src/services/backup.service.js';
-if(process.env.RESEND_API_KEY)throw new Error('Run with RESEND_API_KEY unset; tests must not send mail.');
+if(mailConfiguration().configured)throw new Error('Run with mail delivery disabled; tests must not send mail.');
 await ensureOperations();
 const company=randomUUID(),otherCompany=randomUUID(),users={admin:randomUUID(),worker:randomUUID(),hr:randomUUID(),other:randomUUID()},password='SecureTest2026!',cookies={},emails={},files=new Set(),dir=await fs.mkdtemp(path.join(os.tmpdir(),'luma-operations-'));
 const server=app.listen(0,'127.0.0.1');await new Promise(r=>server.once('listening',r));const base='http://127.0.0.1:'+server.address().port+'/api';
