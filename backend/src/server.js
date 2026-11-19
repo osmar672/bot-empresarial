@@ -1,4 +1,5 @@
 import {startExternalVerification} from './services/externalBackup.service.js';
+import {ensureOscarCustomSchedule, ensureCompanyDocumentsAccess} from './db/bootstrapCustomSchedules.js';
 import {ensureWorkflows} from './db/bootstrapWorkflows.js';
 import {ensurePeopleTools} from './db/bootstrapPeopleTools.js';
 import {ensureOperations} from './db/bootstrapOperations.js';
@@ -21,6 +22,8 @@ try{
   await ensureOperations();
   await ensurePeopleTools();
   await ensureWorkflows();
+  await ensureOscarCustomSchedule();
+  await ensureCompanyDocumentsAccess();
   const mailSchema=await ensureMailOutbox();
   if(mailSchema.created)console.log('Tabla pb_mail_outbox creada automáticamente.');
   const server=app.listen(env.port,()=>console.log(`PolicyBot API http://127.0.0.1:${env.port}`));

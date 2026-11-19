@@ -49,7 +49,18 @@ router.post('/upload',adminOnly,upload.single('file'),asyncHandler(async(req,res
 router.get('/limits',(_req,res)=>res.json({maxUploadMB:env.uploadLimit/1024/1024,unlimitedDocuments:true}));
 router.get('/:id/content',asyncHandler(async(req,res)=>{
  const id=idSchema.parse(req.params.id);
- const doc=await one("SELECT name,mime_type,storage_path,drive_url FROM pb_documents WHERE id=? AND company_id=? AND (?='admin' OR JSON_CONTAINS(allowed_roles,JSON_QUOTE(?)))",[id,req.companyId,req.user.role,req.user.role]);
+ const doc=await one(
+   `SELECT name,mime_type,storage_path,drive_url 
+    FROM pb_documents 
+    WHERE id=? AND company_id=? 
+      AND (?='admin' 
+           OR JSON_CONTAINS(allowed_roles,JSON_QUOTE(?))
+           OR JSON_CONTAINS(allowed_roles,JSON_QUOTE('colaborador'))
+           OR JSON_CONTAINS(allowed_roles,JSON_QUOTE('todos'))
+           OR JSON_CONTAINS(allowed_roles,JSON_QUOTE('all'))
+          )`,
+   [id,req.companyId,req.user.role,req.user.role]
+ );
  if(!doc)throw new HttpError(404,'Documento no encontrado');
  if(doc.storage_path){res.set('Content-Type',doc.mime_type);return res.download(path.join(env.backendDir,'uploads',path.basename(doc.storage_path)),doc.name);}
  if(doc.drive_url)return res.redirect(doc.drive_url);

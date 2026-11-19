@@ -127,7 +127,7 @@ export async function queueAccountLink(user, purpose, cx) {
   };
 }
 export async function requestAccountLink(userId, purpose) {
-  return transaction(async (cx) => {
+  const result = await transaction(async (cx) => {
     const [rows] = await cx.execute(
       "SELECT id,company_id,email FROM pb_users WHERE id=? FOR UPDATE",
       [userId],
@@ -135,11 +135,15 @@ export async function requestAccountLink(userId, purpose) {
     if (!rows.length) return null;
     return queueAccountLink(rows[0], purpose, cx);
   });
+  if (result?.mailId && mailConfigured()) {
+    sendSecurityMail(result.mailId).catch(() => {});
+  }
+  return result;
 }
 export async function consumeAccountToken(token, purpose, password) {
   const hash = tokenHash(token),
     passwordHash = purpose === "reset" ? await bcrypt.hash(password, 12) : null;
-  return transaction(async (cx) => {
+  const result = await transaction(async (cx) => {
     const [rows] = await cx.execute(
       "SELECT t.id,t.user_id,t.company_id FROM pb_account_tokens t WHERE token_hash=? AND purpose=? AND used_at IS NULL AND expires_at>UTC_TIMESTAMP(3) FOR UPDATE",
       [hash, purpose],
@@ -152,11 +156,14 @@ export async function consumeAccountToken(token, purpose, password) {
     const t = rows[0],
       user = { id: t.user_id, company_id: t.company_id };
     const [locked] = await cx.execute(
-      "SELECT id FROM pb_users WHERE id=? AND company_id=? FOR UPDATE",
+      "SELECT id, name, email FROM pb_users WHERE id=? AND company_id=? FOR UPDATE",
       [user.id, user.company_id],
     );
     if (!locked.length)
       throw new HttpError(400, "El enlace es inválido o ha caducado.");
+    const userEmail = locked[0].email;
+    const userName = locked[0].name || "Colaborador";
+
     await cx.execute(
       "UPDATE pb_account_tokens SET used_at=UTC_TIMESTAMP(3) WHERE id=?",
       [t.id],
@@ -182,11 +189,12 @@ export async function consumeAccountToken(token, purpose, password) {
         },
         cx,
       );
-    } else
+    } else {
       await cx.execute(
         "INSERT INTO pb_account_security(user_id,company_id,email_verified_at) VALUES (?,?,UTC_TIMESTAMP(3)) ON DUPLICATE KEY UPDATE email_verified_at=UTC_TIMESTAMP(3)",
         [user.id, user.company_id],
       );
+    }
     await audit(
       {
         companyId: user.company_id,
@@ -200,7 +208,28 @@ export async function consumeAccountToken(token, purpose, password) {
       },
       cx,
     );
+
+    const confirmMailId = randomUUID();
+    const subject = purpose === "reset"
+      ? "Tu contraseña de Luma ha sido actualizada"
+      : "Correo verificado exitosamente — Luma";
+    const body = purpose === "reset"
+      ? `Hola, ${userName}.\n\nTe confirmamos que la contraseña de tu cuenta de Luma (${userEmail}) ha sido restablecida exitosamente.\n\nPor seguridad, todas tus sesiones previas han sido cerradas. Si no realizaste este cambio, ponte en contacto de inmediato con tu administrador.\n\nEquipo de Seguridad de Luma`
+      : `Hola, ${userName}.\n\nTu dirección de correo (${userEmail}) ha sido verificada exitosamente en Luma.\n\nYa puedes acceder a todos los servicios y notificaciones de tu organización.\n\nEquipo de Seguridad de Luma`;
+
+    await cx.execute(
+      "INSERT INTO pb_security_mail(id,company_id,user_id,recipient,subject,body) VALUES (?,?,?,?,?,?)",
+      [confirmMailId, user.company_id, user.id, userEmail, subject, body]
+    );
+
+    return { ok: true, confirmMailId };
   });
+
+  if (result.confirmMailId && mailConfigured()) {
+    sendSecurityMail(result.confirmMailId).catch(() => {});
+  }
+
+  return { ok: true };
 }
 export async function sendSecurityMail(
   id,

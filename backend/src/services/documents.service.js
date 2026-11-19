@@ -7,7 +7,22 @@ import {one,many,run,transaction} from '../db/pool.js';
 import {splitText} from '../rag/chunk.js';
 import {embed,embeddingModel} from './embedding.service.js';
 import {HttpError} from '../utils/errors.js';
-export async function listDocuments(companyId,role='colaborador'){return many(`SELECT d.id,d.name,d.allowed_roles,d.source,d.mime_type,d.drive_url,d.state,d.error_message,d.chunk_count,d.indexed_at,d.created_at,e.method AS extraction_method,e.pages,e.ocr_pages,e.confidence FROM pb_documents d LEFT JOIN pb_document_extractions e ON e.document_id=d.id AND e.company_id=d.company_id WHERE d.company_id=? AND (?='admin' OR JSON_CONTAINS(d.allowed_roles,JSON_QUOTE(?))) ORDER BY d.created_at DESC`,[companyId,role,role]);}
+export async function listDocuments(companyId,role='colaborador'){
+  return many(
+    `SELECT d.id,d.name,d.allowed_roles,d.source,d.mime_type,d.drive_url,d.state,d.error_message,d.chunk_count,d.indexed_at,d.created_at,e.method AS extraction_method,e.pages,e.ocr_pages,e.confidence 
+     FROM pb_documents d 
+     LEFT JOIN pb_document_extractions e ON e.document_id=d.id AND e.company_id=d.company_id 
+     WHERE d.company_id=? 
+       AND (?='admin' 
+            OR JSON_CONTAINS(d.allowed_roles,JSON_QUOTE(?))
+            OR JSON_CONTAINS(d.allowed_roles,JSON_QUOTE('colaborador'))
+            OR JSON_CONTAINS(d.allowed_roles,JSON_QUOTE('todos'))
+            OR JSON_CONTAINS(d.allowed_roles,JSON_QUOTE('all'))
+           ) 
+     ORDER BY d.created_at DESC`,
+    [companyId,role,role]
+  );
+}
 export async function enforceDocumentLimit(companyId){
   const quota=await one(`SELECT p.max_documents,COUNT(d.id) AS used FROM pb_companies c JOIN pb_plans p ON c.plan_id=p.id LEFT JOIN pb_documents d ON d.company_id=c.id WHERE c.id=? GROUP BY c.id,p.max_documents`,[companyId]);
   if(!quota)throw new HttpError(404,'Empresa no encontrada');
