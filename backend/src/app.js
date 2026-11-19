@@ -1,3 +1,9 @@
+import corrections from './routes/corrections.routes.js';
+import hrInbox from './routes/hr-inbox.routes.js';
+import mfa from './routes/mfa.routes.js';
+import knowledge from './routes/knowledge.routes.js';
+import policies from './routes/policies.routes.js';
+import onboarding from './routes/onboarding.routes.js';
 import reports from './routes/reports.routes.js';
 import search from './routes/search.routes.js';
 import permissions from './routes/permissions.routes.js';
@@ -39,6 +45,7 @@ app.use(helmet({
 app.use(express.json({limit:'40kb'}));
 // Evita escrituras desde orígenes externos con cookies; Vite usa proxy same-origin.
 app.use('/api',(req,res,next)=>{
+  res.set('Cache-Control','private, no-store');
   if(['POST','PUT','PATCH','DELETE'].includes(req.method)&&req.headers.origin){
     try{const origin=new URL(req.headers.origin),host=origin.host;
       const allowed=host===req.get('host')||(env.nodeEnv!=='production'&&['127.0.0.1:5173','localhost:5173'].includes(host));
@@ -47,6 +54,7 @@ app.use('/api',(req,res,next)=>{
   }next();
 });
 app.get('/api/health',(_req,res)=>res.json({ok:true,app:'Luma',database:'mysql',chat:'groq',features:{attendance:true,attendanceHistory:true,vacationRequests:true,schedules:true}}));
+app.use('/api/corrections',corrections);app.use('/api/hr-inbox',hrInbox);app.use('/api/auth/mfa',mfa);app.use('/api/knowledge',knowledge);app.use('/api/policies',policies);app.use('/api/onboarding',onboarding);
 app.use('/api/reports',reports);app.use('/api/search',search);
 app.use('/api/permissions',permissions);app.use('/api/leave-policy',leavePolicy);
 app.use('/api/activity',activity);app.use('/api/calendar',calendar);app.use('/api/security',security);app.use('/api/hr-dashboard',hrDashboard);app.use('/api/document-jobs',documentJobs);

@@ -53,6 +53,7 @@ router.get('/:id/content',asyncHandler(async(req,res)=>{
  if(!doc)throw new HttpError(404,'Documento no encontrado');
  if(doc.storage_path){res.set('Content-Type',doc.mime_type);return res.download(path.join(env.backendDir,'uploads',path.basename(doc.storage_path)),doc.name);}
  if(doc.drive_url)return res.redirect(doc.drive_url);
+ const reviewed=await one("SELECT question,answer,source_url FROM pb_knowledge_gaps WHERE document_id=? AND company_id=? AND status='published'",[id,req.companyId]);if(reviewed)return res.attachment(doc.name+'.txt').type('text/plain').send(reviewed.question+'\n\n'+reviewed.answer+'\n\nFuente: '+reviewed.source_url);
  throw new HttpError(404,'El original no está guardado. Vuelve a subir este archivo para descargarlo.');
 }));
 router.post('/:id/reindex',adminOnly,asyncHandler(async(req,res)=>{const id=idSchema.parse(req.params.id);const chunkCount=await reindexExisting(req.companyId,id);res.json({ok:true,chunkCount});}));

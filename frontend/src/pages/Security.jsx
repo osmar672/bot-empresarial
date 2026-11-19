@@ -1,3 +1,4 @@
+import MfaSettings from '../components/MfaSettings.jsx';
 import { useEffect, useState } from "react";
 import { ShieldCheck, LogOut, Mail, RefreshCw } from "lucide-react";
 import { api } from "../services/api.js";
@@ -47,6 +48,7 @@ export default function Security() {
         !error && <Spinner />
       ) : (
         <>
+          <MfaSettings/>
           <section className="card ops-panel">
             <h2>Correo y contraseña</h2>
             <p>{session.user.email}</p>
@@ -191,7 +193,7 @@ export default function Security() {
           </section>
           {data.backup && (
             <section className="card ops-panel">
-              <h2>Respaldos del servidor</h2>
+              <h2>Respaldos del servidor</h2><p>Copia externa: {data.backup.external?.configured?data.backup.external.provider.toUpperCase():'sin configurar'}. Última comprobación: {data.backup.external?.last?.state==='verified'?'descargada y verificada':data.backup.external?.last?.state==='failed'?'requiere atención':'sin registro'}.</p>
               <span className="ops-badge">
                 {data.backup.enabled && data.backup.keyConfigured && data.backup.scheduleValid
                   ? "Programación activada"

@@ -105,6 +105,7 @@ export async function createDatabaseBackup() {
     partial = file + ".partial";
   await fs.mkdir(directory, { recursive: true, mode: 0o700 });
   const cx = await mysql.createConnection({ ...env.db, dateStrings: true });
+  await cx.query("SET time_zone='+00:00'");
   let locked = false,partialCreated=false;
   try {
     const [[lock]] = await cx.query(
@@ -148,7 +149,10 @@ export async function createDatabaseBackup() {
       if (Date.now() - stat.mtimeMs > config.retention * 86400000)
         await fs.unlink(target);
     }
-    return { filename };
+    const {uploadExternalBackup}=await import('./externalBackup.service.js');
+    const external=await uploadExternalBackup(file);
+    if(external.state==='failed')console.error('El respaldo local se guardó, pero falló la copia externa. Revisa el almacenamiento configurado.');
+    return { filename, external };
   } catch (error) {
     await cx.rollback().catch(() => {});
     if(partialCreated)await fs.unlink(partial).catch(() => {});

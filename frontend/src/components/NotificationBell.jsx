@@ -99,9 +99,15 @@ export default function NotificationBell({ onNavigate }) {
       });
       dialog.current.close();
       onNavigate(
-        ["profile", "hr", "documents", "calendar", "security"].includes(
-          item.target,
-        )
+        [
+          "profile",
+          "hr",
+          "documents",
+          "calendar",
+          "security",
+          "policies",
+          "knowledge",
+        ].includes(item.target)
           ? item.target
           : "profile",
       );

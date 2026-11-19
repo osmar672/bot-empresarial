@@ -204,3 +204,7 @@ Consulta `docs/PRUEBAS_DE_ACEPTACION.md` para las siete pruebas del PDF y `docs/
 ## Personal, reportes y aplicación instalable
 
 Permisos por horas, saldo de vacaciones con movimientos, OCR, búsqueda general, exportaciones Excel/PDF, instalación móvil y restauración de respaldos: instrucciones en [Herramientas de personal y móvil](docs/HERRAMIENTAS_PERSONAL_Y_MOVIL.md).
+
+## Flujos de RH y protección del acceso
+
+Correcciones de marcaciones, bandeja de RH, respuestas de IA revisadas, aceptación de políticas por versión, tareas de ingreso, autenticación en dos pasos y conectores de respaldo externo: [guía de operación](docs/FLUJOS_RH_IA_Y_DOBLE_FACTOR.md).

@@ -1,3 +1,4 @@
+import '../styles/workflows.css';
 import '../styles/people-tools.css';
 import { AccountLinkAction } from "../components/AuthRecovery.jsx";
 
@@ -10,6 +11,8 @@ import Login from "../pages/Login.jsx";
 import Chat from "../pages/Chat.jsx";
 import Documents from "../pages/Documents.jsx";
 
+const Policies=lazy(()=>import("../pages/Policies.jsx"));
+const KnowledgeReview=lazy(()=>import("../pages/KnowledgeReview.jsx"));
 const Reports=lazy(()=>import("../pages/Reports.jsx"));
 const Users = lazy(() => import("../pages/Users.jsx"));
 const Usage = lazy(() => import("../pages/Usage.jsx"));
@@ -69,7 +72,7 @@ export default function App() {
     session.user.role === "rrhh" ||
     session.user.role.startsWith("rrhh_");
   const page =
-    tab === "reports" ? <Reports/> : tab === "calendar" ? (
+    tab==='policies'?<Policies/>:tab==='knowledge'&&session.user.role==='admin'?<KnowledgeReview/>:tab === "reports" ? <Reports/> : tab === "calendar" ? (
       <Calendar />
     ) : tab === "security" ? (
       <Security />

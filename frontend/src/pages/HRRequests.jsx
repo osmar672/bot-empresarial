@@ -1,3 +1,5 @@
+import HRInbox from '../components/HRInbox.jsx';
+import Onboarding from '../components/Onboarding.jsx';
 import PermissionRequests from '../components/PermissionRequests.jsx';
 import LeavePolicy from '../components/LeavePolicy.jsx';
 import HRDashboard from "../components/HRDashboard.jsx";
@@ -14,7 +16,7 @@ export default function HRRequests() {
     [error, setError] = useState(null),
     [success, setSuccess] = useState(null),
     [filter, setFilter] = useState("pending"),
-    [tab, setTab] = useState("dashboard");
+    [tab, setTab] = useState("inbox");
   async function refresh() {
     const result = await api("/vacations/review");
     setRequests(result.requests);
@@ -58,7 +60,7 @@ export default function HRRequests() {
         </div>
       </div>
       <Notice error={error} success={success} />
-      <div className="tab-bar">
+      <div className="tab-bar"><button className={tab==='inbox'?'active':''} onClick={()=>setTab('inbox')}>Bandeja de tareas</button><button className={tab==='onboarding'?'active':''} onClick={()=>setTab('onboarding')}>Ingreso de colaboradores</button>
         <button
           className={tab === "dashboard" ? "active" : ""}
           onClick={() => setTab("dashboard")}
@@ -73,7 +75,7 @@ export default function HRRequests() {
         </button>
         <button className={tab==="permissions"?"active":""} onClick={()=>setTab("permissions")}>Permisos por horas</button><button className={tab==="policy"?"active":""} onClick={()=>setTab("policy")}>Reglas y saldos</button>
       </div>
-      {tab === "policy" ? <LeavePolicy/> : tab === "permissions" ? <PermissionRequests review/> : tab === "dashboard" ? (
+      {tab==='inbox'?<HRInbox/>:tab==='onboarding'?<Onboarding review/>:tab === "policy" ? <LeavePolicy/> : tab === "permissions" ? <PermissionRequests review/> : tab === "dashboard" ? (
         <HRDashboard />
       ) : (
         <>

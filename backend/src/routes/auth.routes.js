@@ -1,3 +1,4 @@
+import {mfaEnabled,loginChallenge} from '../services/mfa.service.js';
 import {requestAccountLink} from '../services/accountSecurity.service.js';
 import {run,transaction as withTransaction} from '../db/pool.js';
 import {revokeLegacy} from '../services/accountSecurity.service.js';
@@ -33,6 +34,7 @@ router.post('/login',limiter,asyncHandler(async(req,res)=>{
   const {email,password}=loginSchema.parse(req.body);
   const row=await one('SELECT id,name,email,role,password_hash FROM pb_users WHERE email=?',[email]);
   if(!row||!(await bcrypt.compare(password,row.password_hash)))throw new HttpError(401,'Correo o contraseña incorrectos');
+  if(await mfaEnabled(row.id))return res.status(202).json(await loginChallenge(res,row));
   await setSession(res,row,req);res.json({user:{id:row.id,name:row.name,email:row.email,role:row.role}});
 }));
 router.post('/logout',authenticate,asyncHandler(async(req,res)=>{if(req.sessionId)await run('UPDATE pb_login_sessions SET revoked_at=UTC_TIMESTAMP(3) WHERE id=? AND user_id=?',[req.sessionId,req.user.id]);else await withTransaction(cx=>revokeLegacy(cx,req.user));clearSession(res);res.json({ok:true});}));

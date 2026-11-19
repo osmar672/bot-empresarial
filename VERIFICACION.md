@@ -25,3 +25,13 @@ Chromium: configuración RH, ajuste de saldo, revisión de permisos, formulario 
 Correo: verificación/recuperación y consumo único de enlaces probados con transporte de prueba, incluida concurrencia y reintentos. La configuración activa de este entorno no contiene `RESEND_API_KEY`, `MAIL_FROM` ni `PUBLIC_APP_URL`; no se envió ningún correo real. Se añadió `npm run mail:test` y su envío explícito a una cuenta existente. No se registraron claves, enlaces privados ni destinatarios personales en el repositorio.
 
 Regresiones aprobadas: operaciones, personalización del perfil, gestión laboral, asistencia y 10 pruebas de integración de acceso/Google. `npm run build` y `git diff --check` correctos. Instrucciones operativas en `docs/HERRAMIENTAS_PERSONAL_Y_MOVIL.md`.
+
+## Flujos de RH, conocimiento revisado y doble factor
+
+Implementados y probados con MySQL: correcciones que conservan originales, rechazo de propuestas obsoletas, revisión concurrente y protección contra autorrevisión; bandeja unificada con filtros y recordatorios internos con espera de 24 horas; tareas de ingreso con entrega y validación separadas; aceptación de versiones inmutables del texto indexado con huella y permisos vigentes; agrupación de preguntas por texto normalizado y personas distintas, publicación humana y retiro de las fuentes.
+
+TOTP verificado con un vector RFC, activación desde QR, códigos de recuperación de uso único, rechazo de repetición y límite por intento. Las sesiones previas se invalidan al activar/desactivar. El acceso con Google también queda pendiente del segundo factor; la prueba usa una identidad de Google sustituida, no una cuenta real. Chromium completó los flujos RH, tareas desde móvil, políticas, revisión de IA y acceso con recuperación, sin errores de ejecución.
+
+Conectores S3/compatibles y GCS implementados. S3 probado con servidor local, cargas simples/multipartes, descarga exacta y rechazo de alteración/sobrescritura. Ensayo real de restauración del esquema completo, incluida migración 012, en MySQL 8.4 desechable. No se ha configurado ni probado un bucket externo real; hace falta proveedor, bucket y credenciales del entorno. La comprobación remota semanal verifica el archivo descargado y su cifrado; no ejecuta una restauración semanal de MySQL. GCS requiere una prueba real pendiente.
+
+Las conexiones MySQL de la aplicación, respaldo y restauración usan UTC; presentación en Costa Rica. Migración 012 y creación automática al arranque; no se modificó la historia de migraciones. Las claves y archivos privados permanecen fuera de git. Instrucciones y límites en `docs/FLUJOS_RH_IA_Y_DOBLE_FACTOR.md`.

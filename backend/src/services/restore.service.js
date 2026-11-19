@@ -90,6 +90,7 @@ export async function restoreDatabaseBackup(
       database,
       multipleStatements: false,
     });
+    await cx.query("SET time_zone='+00:00'");
     const [[lock]] = await cx.query("SELECT GET_LOCK(?,0) AS acquired", [
       database + ":restore",
     ]);

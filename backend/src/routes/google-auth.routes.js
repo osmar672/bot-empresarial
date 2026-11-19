@@ -1,3 +1,4 @@
+import {mfaEnabled,loginChallenge} from '../services/mfa.service.js';
 import {Router} from 'express';
 import {randomBytes} from 'node:crypto';
 import {rateLimit} from 'express-rate-limit';
@@ -29,6 +30,7 @@ router.post('/',limiter,asyncHandler(async(req,res)=>{
  if(!nonce||!/^[a-f0-9]{64}$/.test(nonce))throw new HttpError(401,'Vuelve a pulsar el botón de acceso con Google');
  const identity=await verify(credential,nonce,{clientId});
  const user=await resolve(identity,{password});
+ if(await mfaEnabled(user.id))return res.status(202).json(await loginChallenge(res,user));
  await setSession(res,user,req);res.json({user});
 }));
 return router;

@@ -46,7 +46,7 @@ router.post('/stream',asyncHandler(async(req,res)=>{
   const prepared=await prepareQuestion({companyId:req.companyId,userId:req.user.id,role:req.user.role,conversationId,question,documentIds});
   const controller=new AbortController();
   res.on('close',()=>{if(!res.writableEnded)controller.abort();});
-  res.status(200).set({'Content-Type':'text/event-stream; charset=utf-8','Cache-Control':'no-cache, no-transform','X-Accel-Buffering':'no','Connection':'keep-alive'});
+  res.status(200).set({'Content-Type':'text/event-stream; charset=utf-8','Cache-Control':'private, no-store, no-transform','X-Accel-Buffering':'no','Connection':'keep-alive'});
   res.flushHeaders();
   const send=(event)=>{if(!res.destroyed)res.write(`data: ${JSON.stringify(event)}\n\n`);};
   try{

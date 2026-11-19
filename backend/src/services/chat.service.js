@@ -1,3 +1,4 @@
+import {recordKnowledgeGap} from './knowledgeReview.service.js';
 import {randomUUID} from 'node:crypto';
 import {one, many, run, transaction} from '../db/pool.js';
 import {rankChunks} from '../rag/retrieval.js';
@@ -53,7 +54,7 @@ export async function processQuestion({companyId,userId,companyName,question,rol
   let answer='',inputTokens=0,outputTokens=0;
   try{
     onEvent({type:'sources',sources:validSources,conversationId:threadId});
-    if(!sources.length){answer=refusal||'No encuentro esa información en las fuentes autorizadas para tu usuario. Consulta sobre leyes o políticas de la empresa o solicita acceso al administrador.';onEvent({type:'delta',text:answer});}
+    if(!sources.length){if(!refusal)await recordKnowledgeGap(companyId,userId,question);answer=refusal||'No encuentro esa información en las fuentes autorizadas para tu usuario. Consulta sobre leyes o políticas de la empresa o solicita acceso al administrador.';onEvent({type:'delta',text:answer});}
     else{
       const previous=(await history(companyId,userId,{role,conversationId:threadId})).filter(m=>m.id!==messageId&&m.state==='ok'&&m.role_at_request===role&&m.sources.length&&(!documentIds?.length||m.sources.every(s=>documentIds.includes(s.documentId)))).slice(0,6).reverse();
       for await(const item of groq(buildPrompt(companyName,sources,question,{name,role,previous}),signal)){

@@ -1,3 +1,4 @@
+import {externalBackupConfiguration} from '../services/externalBackup.service.js';
 import { backupConfiguration } from "../services/backup.service.js";
 import { Router } from "express";
 import { rateLimit } from "express-rate-limit";
@@ -93,6 +94,7 @@ router.get(
       req.user.role === "admin"
         ? {
             ...backupConfiguration(),
+            external:{...externalBackupConfiguration(),last:await one("SELECT state,verified_at FROM pb_external_backup_checks ORDER BY verified_at DESC LIMIT 1")},
             last: await one(
               "SELECT state,finished_at FROM pb_backup_runs ORDER BY started_at DESC LIMIT 1",
             ),

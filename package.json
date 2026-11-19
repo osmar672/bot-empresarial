@@ -41,7 +41,9 @@
     "test:people-tools": "node scripts/people-tools.integration.mjs",
     "test:ocr": "node scripts/ocr.integration.mjs",
     "test:backup-restore": "node scripts/backup-restore.integration.mjs",
-    "test:security-mail": "node scripts/security-mail.integration.mjs"
+    "test:security-mail": "node scripts/security-mail.integration.mjs",
+    "test:workflows": "node scripts/workflows.integration.mjs",
+    "test:external-backup": "node scripts/external-backup.integration.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
