@@ -1,0 +1,137 @@
+.people-card {
+  padding: 28px;
+  margin-bottom: 24px;
+  min-width: 0;
+}
+.people-card h2 {
+  margin: 10px 0;
+}
+.people-card h3 {
+  margin-top: 28px;
+}
+.people-card form {
+  display: grid;
+  gap: 16px;
+}
+.people-card .field {
+  margin: 0;
+}
+.people-weekdays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  border: 1px solid #ded6eb;
+  border-radius: 12px;
+  padding: 16px;
+}
+.people-weekdays label,
+.people-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.people-balance {
+  display: block;
+  font-size: 28px;
+  color: #65509a;
+  margin: 16px 0;
+}
+.people-ledger {
+  display: grid;
+  gap: 0;
+}
+.people-ledger > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid #ede7f3;
+  padding: 15px 0;
+}
+.people-ledger small {
+  display: block;
+  font-size: 13px;
+  font-weight: 400;
+  color: #766b83;
+  margin-top: 5px;
+}
+.people-estimate {
+  padding: 14px 18px;
+  background: #f2edf8;
+  border-radius: 12px;
+  color: #594373;
+}
+.global-search .field {
+  margin-top: 20px;
+}
+.global-search .tab-bar {
+  display: flex;
+  gap: 7px;
+  overflow: auto;
+}
+.global-search .tab-bar button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+.search-results article {
+  padding: 18px 0;
+  border-bottom: 1px solid #e8e2ef;
+}
+.search-results a,
+.search-results button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.search-results small {
+  display: block;
+  margin-top: 6px;
+  color: #81748e;
+}
+.search-results p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.pwa-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: #eee7f8;
+  color: #554070;
+  font-size: 13px;
+}
+.pwa-banner button {
+  font: inherit;
+}
+.network-warning {
+  background: #fff3da;
+  color: #71521c;
+}
+.tab-bar {
+  flex-wrap: wrap;
+}
+@media (max-width: 640px) {
+  .people-card {
+    padding: 20px;
+  }
+  .people-card .section-heading {
+    align-items: flex-start;
+  }
+  .people-balance {
+    font-size: 23px;
+  }
+  .global-search {
+    max-width: calc(100vw - 24px);
+  }
+  .people-ledger > div {
+    flex-wrap: wrap;
+  }
+}

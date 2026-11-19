@@ -1,6 +1,8 @@
 import mysql from 'mysql2/promise';
 import {env} from '../config/env.js';
 export const pool=mysql.createPool({...env.db,waitForConnections:true,connectionLimit:10,timezone:'Z',decimalNumbers:true,enableKeepAlive:true});
+// DATETIME defaults and explicit UTC_TIMESTAMP must use the same server session zone.
+pool.on('connection',connection=>connection.query("SET time_zone='+00:00'"));
 export async function one(sql,params=[]){const [rows]=await pool.execute(sql,params);return rows[0]??null;}
 export async function many(sql,params=[]){const [rows]=await pool.execute(sql,params);return rows;}
 export async function run(sql,params=[]){const [result]=await pool.execute(sql,params);return result;}

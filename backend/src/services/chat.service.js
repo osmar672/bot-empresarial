@@ -1,3 +1,4 @@
+import {recordKnowledgeGap} from './knowledgeReview.service.js';
 import {randomUUID} from 'node:crypto';
 import {one, many, run, transaction} from '../db/pool.js';
 import {rankChunks} from '../rag/retrieval.js';
@@ -8,7 +9,7 @@ import {questionRefusal} from '../utils/access.js';
 import {listDocuments} from './documents.service.js';
 export async function conversations(companyId,userId){return many('SELECT id,title,created_at FROM pb_conversations WHERE company_id=? AND user_id=? ORDER BY created_at DESC,id DESC',[companyId,userId]);}
 export async function history(companyId,userId,{role='colaborador',conversationId=null,before=null}={}){
- const rows=await many(`SELECT id,conversation_id,question,answer,sources,input_tokens,output_tokens,state,role_at_request,created_at FROM pb_messages WHERE company_id=? AND user_id=? AND (? IS NULL OR conversation_id=?) AND (? IS NULL OR (created_at,id) < (SELECT created_at,id FROM pb_messages WHERE id=? AND company_id=? AND user_id=?)) ORDER BY created_at DESC,id DESC LIMIT 200`,[companyId,userId,conversationId,conversationId,before,before,companyId,userId]);
+ const rows=await many(`SELECT id,conversation_id,question,answer,sources,input_tokens,output_tokens,state,role_at_request,created_at,(SELECT rating FROM pb_answer_feedback f WHERE f.message_id=pb_messages.id AND f.user_id=pb_messages.user_id) AS feedback_rating FROM pb_messages WHERE company_id=? AND user_id=? AND (? IS NULL OR conversation_id=?) AND (? IS NULL OR (created_at,id) < (SELECT created_at,id FROM pb_messages WHERE id=? AND company_id=? AND user_id=?)) ORDER BY created_at DESC,id DESC LIMIT 200`,[companyId,userId,conversationId,conversationId,before,before,companyId,userId]);
  const visible=new Set((await listDocuments(companyId,role)).map(d=>d.id));
  return rows.map(m=>{
   let sources;try{sources=typeof m.sources==='string'?JSON.parse(m.sources):m.sources||[];}catch{sources=[];}
@@ -33,12 +34,13 @@ export async function reserveQuestion(companyId,userId,question,{conversationId=
     await cx.execute(`INSERT INTO pb_messages(id,company_id,user_id,question,state,conversation_id,role_at_request) VALUES (?,?,?,?,'processing',?,?)`,[id,companyId,userId,question,conversationId,role]);
   });return {messageId:id,conversationId};
 }
-export async function prepareQuestion({companyId,userId,question,role='colaborador',conversationId=null,rank=rankChunks}){
+export async function prepareQuestion({companyId,userId,question,role='colaborador',conversationId=null,documentIds=null,rank=rankChunks}){
+  if(documentIds?.length){const visible=new Set((await listDocuments(companyId,role)).filter(d=>d.state==='indexado').map(d=>d.id));if(documentIds.some(id=>!visible.has(id)))throw new HttpError(404,'Algún documento seleccionado ya no está disponible para tu usuario');}
   const reserved=await reserveQuestion(companyId,userId,question,{conversationId,role});
   const {messageId}=reserved;
   try{
     const refusal=questionRefusal(question);
-    const sources=refusal?[]:await rank(companyId,question,{role});
+    const sources=refusal?[]:await rank(companyId,question,{role,documentIds});
     if(sources.length&&!env.groqKey)throw new HttpError(503,'Configura GROQ_API_KEY para utilizar el chatbot');
     return {sources,...reserved,refusal};
   }catch(error){
@@ -46,15 +48,15 @@ export async function prepareQuestion({companyId,userId,question,role='colaborad
     throw error;
   }
 }
-export async function processQuestion({companyId,userId,companyName,question,role='colaborador',name='',conversationId=null,onEvent,signal,prepared=null,rank=rankChunks,groq=streamGroq}){
-  const {sources,messageId,conversationId:threadId,refusal}=prepared||await prepareQuestion({companyId,userId,question,role,conversationId,rank});
+export async function processQuestion({companyId,userId,companyName,question,role='colaborador',name='',conversationId=null,onEvent,signal,prepared=null,documentIds=null,rank=rankChunks,groq=streamGroq}){
+  const {sources,messageId,conversationId:threadId,refusal}=prepared||await prepareQuestion({companyId,userId,question,role,conversationId,documentIds,rank});
   const validSources=sources.map(s=>({id:s.ref,documentId:s.document_id,name:s.document_name,url:'/api/documents/'+s.document_id+'/content',drive_url:s.drive_url||null}));
   let answer='',inputTokens=0,outputTokens=0;
   try{
     onEvent({type:'sources',sources:validSources,conversationId:threadId});
-    if(!sources.length){answer=refusal||'No encuentro esa información en las fuentes autorizadas para tu usuario. Consulta sobre leyes o políticas de la empresa o solicita acceso al administrador.';onEvent({type:'delta',text:answer});}
+    if(!sources.length){if(!refusal)await recordKnowledgeGap(companyId,userId,question);answer=refusal||'No encuentro esa información en las fuentes autorizadas para tu usuario. Consulta sobre leyes o políticas de la empresa o solicita acceso al administrador.';onEvent({type:'delta',text:answer});}
     else{
-      const previous=(await history(companyId,userId,{role,conversationId:threadId})).filter(m=>m.id!==messageId&&m.state==='ok'&&m.role_at_request===role&&m.sources.length).slice(0,6).reverse();
+      const previous=(await history(companyId,userId,{role,conversationId:threadId})).filter(m=>m.id!==messageId&&m.state==='ok'&&m.role_at_request===role&&m.sources.length&&(!documentIds?.length||m.sources.every(s=>documentIds.includes(s.documentId)))).slice(0,6).reverse();
       for await(const item of groq(buildPrompt(companyName,sources,question,{name,role,previous}),signal)){
         if(item.type==='delta'){answer+=item.text;onEvent(item);}
         if(item.type==='usage'){inputTokens=Number(item.usage?.prompt_tokens||0);outputTokens=Number(item.usage?.completion_tokens||0);}

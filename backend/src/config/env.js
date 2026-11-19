@@ -16,7 +16,7 @@ export const env = {
   voyageModel:process.env.VOYAGE_MODEL||'voyage-4-lite',
   googleClientId:process.env.GOOGLE_CLIENT_ID||'',
   googleCredentials:process.env.GOOGLE_APPLICATION_CREDENTIALS||'./credentials/service-account.json',
-  syncCron:process.env.SYNC_CRON||'0 * * * *',
+  syncCron:process.env.SYNC_CRON||'*/5 * * * *',
   uploadLimit:Math.max(1,Number(process.env.MAX_UPLOAD_MB||1024))*1024*1024
 };
 export function assertConfig(){
