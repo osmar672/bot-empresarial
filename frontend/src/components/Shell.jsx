@@ -5,42 +5,59 @@ import {Notice} from './UI.jsx';
 import {useAttendance} from '../context/AttendanceContext.jsx';
 import useStoredToggle from '../hooks/useStoredToggle.js';
 import {useEffect,useState,useRef} from 'react';
-import {BookOpen,ChevronRight,FileText,LogOut,Menu,Minimize2,Maximize2,MessageSquareText,ShieldCheck,Users,UserRound,CalendarDays,Clock3,History,X} from 'lucide-react';
+import {BookOpen,ChevronRight,FileText,LogOut,Menu,Minimize2,Maximize2,MessageSquareText,ShieldCheck,Users,UserRound,CalendarDays,Clock3,History,Wallet,X} from 'lucide-react';
 import {useAuth} from '../context/AuthContext.jsx';
-const primaryTabs = [
- {id:'chat',label:'Asistente',icon:MessageSquareText},
- {id:'documents',label:'Documentos',icon:FileText},
- {id:'attendance',label:'Mi jornada',icon:Clock3},
- {id:'profile',label:'Mi perfil',icon:UserRound},
-];
+
+function getPrimaryTabs(role) {
+  const canManageDocs = role === 'admin' || role === 'rrhh' || role?.startsWith('rrhh_');
+  if (canManageDocs) {
+    return [
+      {id:'chat',label:'Asistente',icon:MessageSquareText},
+      {id:'documents',label:'Documentos',icon:FileText},
+      {id:'attendance',label:'Mi jornada',icon:Clock3},
+      {id:'profile',label:'Mi perfil',icon:UserRound},
+    ];
+  }
+  return [
+    {id:'chat',label:'Asistente',icon:MessageSquareText},
+    {id:'policies',label:'Políticas',icon:BookOpen},
+    {id:'finance',label:'Finanzas',icon:Wallet},
+    {id:'attendance',label:'Mi jornada',icon:Clock3},
+    {id:'profile',label:'Mi perfil',icon:UserRound},
+  ];
+}
+
 const workspaceTools = [
- {id:'calendar',label:'Calendario',icon:CalendarDays},
- {id:'reports',label:'Reportes',icon:FileText},
- {id:'policies',label:'Políticas y firmas',icon:BookOpen},
+  {id:'calendar',label:'Calendario',icon:CalendarDays},
+  {id:'reports',label:'Reportes',icon:FileText},
+  {id:'policies',label:'Políticas y firmas',icon:BookOpen},
+  {id:'finance',label:'Finanzas y gastos',icon:Wallet},
 ];
 const managementTools = [
- {id:'hr',label:'Solicitudes RH',icon:Users},
- {id:'users',label:'Colaboradores',icon:Users},
- {id:'knowledge',label:'Revisión de IA',icon:MessageSquareText},
- {id:'audit',label:'Actividad y calidad',icon:History},
- {id:'usage',label:'Plan y consumo',icon:ShieldCheck},
+  {id:'hr',label:'Solicitudes RH',icon:Users},
+  {id:'users',label:'Colaboradores',icon:Users},
+  {id:'knowledge',label:'Revisión de IA',icon:MessageSquareText},
+  {id:'audit',label:'Actividad y calidad',icon:History},
+  {id:'usage',label:'Plan y consumo',icon:ShieldCheck},
 ];
 
 function availableManagementTools(role) {
- if (role === 'admin') return managementTools;
- return role === 'rrhh' || role.startsWith('rrhh_') ? managementTools.slice(0, 1) : [];
+  if (role === 'admin') return managementTools;
+  return role === 'rrhh' || role.startsWith('rrhh_') ? managementTools.slice(0, 1) : [];
 }
 
 export default function Shell({tab,setTab,children}){
- const {session,accountNotice,dismissAccountNotice,dismissAttendanceOffer}=useAuth();const {requestLogout}=useAttendance();const [open,setOpen]=useState(false);
- const mainScroll=useRef(null);
- const accountMenu=useRef(null);
- const management=availableManagementTools(session.user.role);
- const canReturnToAdministration=session.user.role==='admin'&&(tab==='documents'||[...management,...workspaceTools].some(item=>item.id===tab));
- const pageLabel=[...primaryTabs,...workspaceTools,...management,
-  {id:'requests',label:'Mis solicitudes'},{id:'security',label:'Seguridad'},
-  {id:'administration',label:'Administración'}
- ].find(item=>item.id===tab)?.label;
+  const {session,accountNotice,dismissAccountNotice,dismissAttendanceOffer}=useAuth();const {requestLogout}=useAttendance();const [open,setOpen]=useState(false);
+  const mainScroll=useRef(null);
+  const accountMenu=useRef(null);
+  const primaryTabs=getPrimaryTabs(session?.user?.role);
+  const management=availableManagementTools(session.user.role);
+  const canReturnToAdministration=session.user.role==='admin'&&(tab==='documents'||[...management,...workspaceTools].some(item=>item.id===tab));
+  const pageLabel=[...primaryTabs,...workspaceTools,...management,
+   {id:'finance',label:'Finanzas y gastos'},
+   {id:'requests',label:'Mis solicitudes'},{id:'security',label:'Seguridad'},
+   {id:'administration',label:'Administración'}
+  ].find(item=>item.id===tab)?.label;
  function navigate(next,id){
   if(accountMenu.current) accountMenu.current.open=false;
   setOpen(false);

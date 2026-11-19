@@ -36,7 +36,12 @@ router.use((_req, res, next) => {
 });
 
 const emptyBody = z.object({}).strict();
-const checkOutBody = z.object({ entryId: z.string().uuid().optional() }).strict();
+const checkOutBody = z.object({
+  entryId: z.string().uuid().optional(),
+  overtimeRequested: z.boolean().optional(),
+  overtimeMinutes: z.number().int().min(0).max(480).optional(),
+  overtimeReason: z.string().trim().max(255).optional().nullable()
+}).strict();
 
 const upload = multer({
   dest: os.tmpdir(),
@@ -83,7 +88,7 @@ router.post('/in', asyncHandler(async (req, res) => {
 
 router.post('/out', asyncHandler(async (req, res) => {
   const payload = checkOutBody.parse(req.body || {});
-  const result = await checkOutEmployee(req, payload.entryId);
+  const result = await checkOutEmployee(req, payload.entryId, payload);
   res.json(result);
 }));
 

@@ -1,18 +1,63 @@
 import { z } from 'zod';
+import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
+const envPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../.env');
 const gmailSettings = ['GMAIL_FROM', 'GMAIL_CLIENT_ID', 'GMAIL_CLIENT_SECRET', 'GMAIL_REFRESH_TOKEN'];
+const smtpSettings = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS'];
 const email = z.string().email().regex(/^[!-~]+$/);
 
 export function mailConfiguration() {
-  const provider = process.env.MAIL_PROVIDER?.trim().toLowerCase() || 'resend';
-  if (!['gmail', 'resend'].includes(provider)) {
+  dotenv.config({ path: envPath, override: true });
+  const envProvider = process.env.MAIL_PROVIDER?.trim().toLowerCase();
+  const provider = envProvider || (process.env.SMTP_HOST ? 'smtp' : 'resend');
+  if (!['gmail', 'resend', 'smtp'].includes(provider)) {
     return { provider, missing: ['MAIL_PROVIDER'], configured: false };
   }
-  const fields = provider === 'gmail' ? gmailSettings : ['RESEND_API_KEY', 'MAIL_FROM'];
+  let fields;
+  if (provider === 'gmail') {
+    fields = gmailSettings;
+  } else if (provider === 'smtp') {
+    fields = smtpSettings;
+  } else {
+    fields = ['RESEND_API_KEY', 'MAIL_FROM'];
+  }
   const missing = fields.filter(field => !process.env[field]?.trim());
   if (provider === 'gmail' && !missing.includes('GMAIL_FROM') &&
       !email.safeParse(process.env.GMAIL_FROM.trim()).success) missing.push('GMAIL_FROM');
+  if (provider === 'smtp' && process.env.SMTP_FROM?.trim() &&
+      !email.safeParse(process.env.SMTP_FROM.trim()).success) missing.push('SMTP_FROM');
   return { provider, missing, configured: missing.length === 0 };
+}
+
+async function sendSmtp(mail) {
+  const host = process.env.SMTP_HOST?.trim();
+  const port = Number(process.env.SMTP_PORT?.trim() || 587);
+  const secure = process.env.SMTP_SECURE === 'true' || port === 465;
+  const user = process.env.SMTP_USER?.trim();
+  const pass = process.env.SMTP_PASS?.trim();
+  const from = process.env.SMTP_FROM?.trim() || user || 'no-reply@luma.internal';
+
+  const transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure,
+    auth: user ? { user, pass } : undefined,
+    tls: { rejectUnauthorized: false }
+  });
+
+  const mailOptions = {
+    from: from.includes('<') ? from : `Luma <${from}>`,
+    to: mail.recipient,
+    subject: mail.subject,
+    text: mail.body,
+    html: mail.html || undefined
+  };
+
+  const result = await transporter.sendMail(mailOptions);
+  if (!result || !result.messageId) throw new Error('MAIL_INVALID_RESPONSE');
 }
 
 async function sendGmail(mail) {
@@ -78,5 +123,7 @@ async function sendResend(mail) {
 export async function sendTransactionalMail(mail) {
   const { provider, configured } = mailConfiguration();
   if (!configured) throw new Error('MAIL_NOT_CONFIGURED');
-  await (provider === 'gmail' ? sendGmail : sendResend)(mail);
+  if (provider === 'gmail') await sendGmail(mail);
+  else if (provider === 'smtp') await sendSmtp(mail);
+  else await sendResend(mail);
 }

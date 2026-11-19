@@ -5,6 +5,7 @@ import { one, many, run, transaction } from '../db/pool.js';
 import { env } from '../config/env.js';
 import { HttpError } from '../utils/errors.js';
 import { recordPunctuality } from './punctuality.service.js';
+import { dispatchWelcome } from './mail.service.js';
 
 export const TIMEZONE = 'America/Costa_Rica';
 
@@ -204,7 +205,9 @@ export async function getAttendanceAuditLog(companyId, { limit = 50 } = {}) {
 export async function getUserScheduleForDate(companyId, userId, date = new Date()) {
   const { dateStr, timeStr, dayOfWeek } = getCostaRicaDateParts(date);
   const schedule = await one(
-    `SELECT id, day_of_week, day_name, start_time, end_time, break_start_time, break_end_time, state, shift_name
+    `SELECT id, day_of_week, day_name, start_time, end_time, break_start_time, break_end_time,
+            break1_start_time, break1_end_time, lunch_start_time, lunch_end_time,
+            break2_start_time, break2_end_time, timezone, state, shift_name
      FROM pb_work_schedules
      WHERE company_id = ? AND user_id = ? AND day_of_week = ?`,
     [companyId, userId, dayOfWeek]
@@ -220,15 +223,16 @@ export async function getUserScheduleForDate(companyId, userId, date = new Date(
 
 /**
  * Registra la entrada (check-in) determinando automáticamente puntualidad y horario.
+ * Si la entrada es tardía, encola y envía notificación por correo detallada.
  */
 export async function checkInEmployee(req) {
   const companyId = req.companyId;
   const userId = req.user.id;
 
-  return transaction(async cx => {
+  const result = await transaction(async cx => {
     // Bloquear concurrencia a nivel de usuario
     const [users] = await cx.execute(
-      'SELECT id, role FROM pb_users WHERE id = ? AND company_id = ? FOR UPDATE',
+      'SELECT id, name, email, role FROM pb_users WHERE id = ? AND company_id = ? FOR UPDATE',
       [userId, companyId]
     );
     if (!users.length) throw new HttpError(401, 'Usuario no encontrado');
@@ -245,7 +249,7 @@ export async function checkInEmployee(req) {
 
     // Obtener horario programado para el día de hoy
     const [schedules] = await cx.execute(
-      `SELECT id, start_time, end_time, state, shift_name
+      `SELECT id, start_time, end_time, break1_start_time, break1_end_time, lunch_start_time, lunch_end_time, break2_start_time, break2_end_time, state, shift_name
        FROM pb_work_schedules
        WHERE company_id = ? AND user_id = ? AND day_of_week = ?`,
       [companyId, userId, dayOfWeek]
@@ -264,6 +268,8 @@ export async function checkInEmployee(req) {
     let scheduledStart = null;
     let scheduledEnd = null;
     let scheduleId = null;
+    let delayMinutes = 0;
+    let mailId = null;
 
     if (schedule) {
       scheduleId = schedule.id;
@@ -271,9 +277,22 @@ export async function checkInEmployee(req) {
       scheduledEnd = schedule.end_time;
 
       if (schedule.state === 'laboral' && schedule.start_time) {
-        const onTime = isCheckInOnTime(timeStr, schedule.start_time, tolerance);
-        punctuality = onTime ? 'a_tiempo' : 'tarde';
-        attendanceStatus = onTime ? 'a_tiempo' : 'tarde';
+        const parseSec = str => {
+          const [h, m, s] = (str || '00:00:00').split(':').map(Number);
+          return (h * 3600) + (m * 60) + (s || 0);
+        };
+        const checkInSec = parseSec(timeStr);
+        const scheduledStartSec = parseSec(schedule.start_time);
+        const limitSec = scheduledStartSec + (tolerance * 60);
+
+        if (checkInSec <= limitSec) {
+          punctuality = 'a_tiempo';
+          attendanceStatus = 'a_tiempo';
+        } else {
+          punctuality = 'tarde';
+          attendanceStatus = 'tarde';
+          delayMinutes = Math.max(1, Math.round((checkInSec - scheduledStartSec) / 60));
+        }
       }
     }
 
@@ -299,25 +318,59 @@ export async function checkInEmployee(req) {
 
     await recordPunctuality(cx, { companyId, userId, entryId: id });
 
+    // Notificación automática por correo al registrar entrada tarde
+    if (punctuality === 'tarde' && users[0]?.email) {
+      const [existingMail] = await cx.execute(
+        `SELECT id FROM pb_mail_outbox 
+         WHERE company_id = ? AND user_id = ? 
+           AND subject = 'Registro de tardía — Luma' 
+           AND body LIKE ?`,
+        [companyId, userId, `%Fecha: ${dateStr}%`]
+      );
+      if (!existingMail.length) {
+        mailId = randomUUID();
+        const appUrl = process.env.PUBLIC_APP_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://127.0.0.1:5173');
+        const workdayUrl = appUrl ? `${appUrl}/#attendance` : 'enlace en la sección "Mi jornada"';
+        const recipientEmail = users[0].email;
+        const recipientName = users[0].name || 'Colaborador';
+        const emailBody = `Hola, ${recipientName}.\n\nSe ha registrado una marcación de entrada fuera del horario programado:\n\n- Fecha: ${dateStr}\n- Hora programada: ${scheduledStart?.slice(0, 5) || '07:00'}\n- Hora registrada: ${timeStr.slice(0, 5)}\n- Estado: Tardía\n- Retraso aproximado: ${delayMinutes} minuto${delayMinutes === 1 ? '' : 's'}\n\nPuedes consultar el detalle de tu jornada y presentar una justificación desde "Mi jornada" en Luma:\n${workdayUrl}\n\nEquipo de Recursos Humanos`;
+
+        await cx.execute(
+          `INSERT INTO pb_mail_outbox (id, company_id, user_id, recipient, subject, body, next_attempt_at, updated_at)
+           VALUES (?, ?, ?, ?, 'Registro de tardía — Luma', ?, UTC_TIMESTAMP(3), UTC_TIMESTAMP(3))`,
+          [mailId, companyId, userId, recipientEmail, emailBody]
+        );
+      }
+    }
+
     return {
       ok: true,
       id,
       punctualityStatus: punctuality,
       attendanceStatus,
+      delayMinutes,
       scheduledStartTime: scheduledStart,
       scheduledEndTime: scheduledEnd,
       checkInTime: timeStr,
-      workDate: dateStr
+      workDate: dateStr,
+      mailId
     };
   });
+
+  if (result.mailId) {
+    dispatchWelcome(result.mailId).catch(() => {});
+  }
+
+  return result;
 }
 
 /**
- * Registra la salida (check-out) con duración de jornada.
+ * Registra la salida (check-out) con duración de jornada y gestión de horas extra.
  */
-export async function checkOutEmployee(req, entryId = null) {
+export async function checkOutEmployee(req, entryId = null, options = {}) {
   const companyId = req.companyId;
   const userId = req.user.id;
+  const { overtimeRequested = false, overtimeMinutes = 0, overtimeReason = null } = options;
 
   return transaction(async cx => {
     const [users] = await cx.execute(
@@ -339,18 +392,27 @@ export async function checkOutEmployee(req, entryId = null) {
       throw new HttpError(409, 'La jornada cambió en otra ventana. Actualiza la vista y confirma de nuevo la salida.');
     }
 
+    const otStatus = overtimeRequested ? 'solicitada' : 'ninguno';
+    const otMinutes = overtimeRequested ? Math.max(1, Number(overtimeMinutes || 0)) : 0;
+    const otReason = overtimeRequested ? String(overtimeReason || '').slice(0, 255) : null;
+
     await cx.execute(
       `UPDATE pb_attendance
        SET checked_out_at = UTC_TIMESTAMP(3),
            duration_seconds = TIMESTAMPDIFF(SECOND, checked_in_at, UTC_TIMESTAMP(3)),
+           overtime_minutes = ?,
+           overtime_status = ?,
+           overtime_reason = ?,
            updated_at = UTC_TIMESTAMP(3)
        WHERE id = ? AND company_id = ? AND user_id = ? AND checked_out_at IS NULL`,
-      [currentOpen.id, companyId, userId]
+      [otMinutes, otStatus, otReason, currentOpen.id, companyId, userId]
     );
 
     return {
       ok: true,
-      id: currentOpen.id
+      id: currentOpen.id,
+      overtimeStatus: otStatus,
+      overtimeMinutes: otMinutes
     };
   });
 }
@@ -365,7 +427,7 @@ export async function getAttendanceCurrentState(companyId, userId) {
   const [openEntry, entries, clock, schedule, settings] = await Promise.all([
     one(
       `SELECT a.id, a.checked_in_at, a.work_date, a.scheduled_start_time, a.scheduled_end_time,
-              a.punctuality_status, a.attendance_status, s.shift_name
+              a.punctuality_status, a.attendance_status, a.overtime_minutes, a.overtime_status, a.overtime_reason, s.shift_name
        FROM pb_attendance a
        LEFT JOIN pb_work_schedules s ON s.id = a.schedule_id
        WHERE a.company_id = ? AND a.user_id = ? AND a.checked_in_at IS NOT NULL AND a.checked_out_at IS NULL`,
@@ -374,7 +436,7 @@ export async function getAttendanceCurrentState(companyId, userId) {
     many(
       `SELECT a.id, a.checked_in_at, a.checked_out_at, a.work_date,
               a.scheduled_start_time, a.scheduled_end_time,
-              a.punctuality_status, a.attendance_status,
+              a.punctuality_status, a.attendance_status, a.overtime_minutes, a.overtime_status, a.overtime_reason,
               TIMESTAMPDIFF(SECOND, a.checked_in_at, COALESCE(a.checked_out_at, UTC_TIMESTAMP(3))) AS duration_seconds,
               s.shift_name
        FROM pb_attendance a
@@ -386,7 +448,9 @@ export async function getAttendanceCurrentState(companyId, userId) {
     ),
     one('SELECT UTC_TIMESTAMP(3) AS server_time'),
     one(
-      `SELECT id, day_of_week, day_name, start_time, end_time, break_start_time, break_end_time, state, shift_name
+      `SELECT id, day_of_week, day_name, start_time, end_time, break_start_time, break_end_time,
+              break1_start_time, break1_end_time, lunch_start_time, lunch_end_time,
+              break2_start_time, break2_end_time, timezone, state, shift_name
        FROM pb_work_schedules
        WHERE company_id = ? AND user_id = ? AND day_of_week = ?`,
       [companyId, userId, dayOfWeek]

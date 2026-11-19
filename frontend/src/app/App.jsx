@@ -71,12 +71,27 @@ export default function App() {
       </div>
     );
   if (!session) return <Login />;
-  const isHR =
+  const canManageDocs =
     session.user.role === "admin" ||
     session.user.role === "rrhh" ||
     session.user.role.startsWith("rrhh_");
+  const isHR = canManageDocs;
+
+  if (!canManageDocs && tab === "documents") {
+    // Redirige de forma segura a colaboradores fuera del módulo administrativo de documentos
+    setTab("policies");
+  }
+
   const page =
-    tab==='policies'?<Policies/>:tab==='knowledge'&&session.user.role==='admin'?<KnowledgeReview/>:tab === "reports" ? <Reports/> : tab === "calendar" ? (
+    tab === "finance" ? (
+      <Policies initialSection="finance" />
+    ) : tab === "policies" ? (
+      <Policies initialSection="policies" />
+    ) : tab === "knowledge" && session.user.role === "admin" ? (
+      <KnowledgeReview />
+    ) : tab === "reports" ? (
+      <Reports />
+    ) : tab === "calendar" ? (
       <Calendar />
     ) : tab === "security" ? (
       <Security />
@@ -92,14 +107,18 @@ export default function App() {
       <Requests />
     ) : tab === "profile" ? (
       <Profile onRequests={() => setTab("requests")} />
-    ) : tab === "documents" ? (
+    ) : tab === "documents" && canManageDocs ? (
       <Documents />
     ) : tab === "users" && session.user.role === "admin" ? (
       <Users />
     ) : tab === "usage" && session.user.role === "admin" ? (
       <Usage />
     ) : (
-      <Chat key={openConversation||"chat"} initialConversation={openConversation} onDocuments={() => setTab("documents")} />
+      <Chat
+        key={openConversation || "chat"}
+        initialConversation={openConversation}
+        onDocuments={() => setTab(canManageDocs ? "documents" : "policies")}
+      />
     );
   return (
     <AttendanceProvider key={session.user.id}>
