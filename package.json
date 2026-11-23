@@ -43,7 +43,10 @@
     "test:backup-restore": "node scripts/backup-restore.integration.mjs",
     "test:security-mail": "node scripts/security-mail.integration.mjs",
     "test:workflows": "node scripts/workflows.integration.mjs",
-    "test:external-backup": "node scripts/external-backup.integration.mjs"
+    "test:external-backup": "node scripts/external-backup.integration.mjs",
+    "test:security": "node --test backend/tests/request-security.test.js backend/tests/xss-rendering.test.js backend/tests/csrf-client.test.js",
+    "security:lab": "node scripts/security-sql-lab.mjs --local-lab",
+    "test:security:integration": "node --test scripts/security.integration.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

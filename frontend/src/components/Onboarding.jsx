@@ -1,3 +1,4 @@
+import {safeHref} from './SafeMarkdown.js';
 import { useEffect, useState } from "react";
 import { api } from "../services/api.js";
 import { Notice, Spinner } from "./UI.jsx";
@@ -155,7 +156,7 @@ export default function Onboarding({ review = false }) {
             <p>{t.description}</p>
             {t.due_date && <p>Fecha objetivo: {t.due_date.slice(0, 10)}</p>}
             {t.link && (
-              <a href={t.link} rel="noreferrer noopener" target="_blank">
+              <a href={safeHref(t.link)} rel="noreferrer noopener" target="_blank">
                 Abrir material de bienvenida ↗
               </a>
             )}

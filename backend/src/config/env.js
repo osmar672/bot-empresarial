@@ -5,6 +5,8 @@ const backendDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '.
 dotenv.config({path:path.join(backendDir,'.env')});
 export const env = {
   backendDir,
+  publicAppUrl: process.env.PUBLIC_APP_URL || '',
+  corsOrigins: process.env.CORS_ORIGINS || '',
   port: Number(process.env.PORT||4000),
   nodeEnv: process.env.NODE_ENV||'development',
   db: {host:process.env.MYSQL_HOST||'127.0.0.1',port:Number(process.env.MYSQL_PORT||3307),user:process.env.MYSQL_USER||'policybot',password:process.env.MYSQL_PASSWORD||'',database:process.env.MYSQL_DATABASE||'tablero'},

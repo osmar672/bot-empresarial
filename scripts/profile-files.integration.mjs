@@ -1,3 +1,4 @@
+import {csrfFetch as fetch} from './helpers/csrf-fetch.mjs';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import app from '../backend/src/app.js';

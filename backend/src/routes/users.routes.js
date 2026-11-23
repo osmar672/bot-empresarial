@@ -1,6 +1,7 @@
 import {audit,notify} from '../services/activity.service.js';
 import {queueWelcome,dispatchWelcome} from '../services/mail.service.js';
 import {Router} from 'express';
+import {z} from 'zod';
 import bcrypt from 'bcryptjs';
 import {randomUUID} from 'node:crypto';
 import {many,run,transaction,one} from '../db/pool.js';
@@ -12,10 +13,12 @@ const router=Router();router.use(authenticate,adminOnly);
 const MAX_COLLABORATORS=500;
 
 router.get('/',asyncHandler(async(req,res)=>{
-  const page=Math.max(1,parseInt(req.query.page,10)||1);
-  const limit=Math.max(1,Math.min(100,parseInt(req.query.limit,10)||25));
-  const search=typeof req.query.search==='string'?req.query.search.trim():'';
-  const role=typeof req.query.role==='string'?req.query.role.trim():'';
+  const {page,limit,search,role}=z.object({
+    page:z.coerce.number().int().min(1).max(1000000).default(1),
+    limit:z.coerce.number().int().min(1).max(100).default(25),
+    search:z.string().trim().max(190).default(''),
+    role:z.string().trim().max(80).default('')
+  }).strict().parse(req.query);
 
   const conditions=['u.company_id=?'];
   const params=[req.companyId];

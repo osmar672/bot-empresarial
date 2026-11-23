@@ -1,3 +1,5 @@
+import {apiSecurity} from '../backend/src/middlewares/requestSecurity.js';
+import {csrfFetch as fetch} from './helpers/csrf-fetch.mjs';
 import { mailConfiguration } from "../backend/src/services/mailTransport.js";
 import express from "express";
 import { createGoogleAuthRouter } from "../backend/src/routes/google-auth.routes.js";
@@ -402,6 +404,7 @@ try {
   await expect("/auth/me", { cookie: before }, 401);
   const googleApp = express();
   googleApp.use(express.json());
+  googleApp.use("/api",apiSecurity());
   googleApp.use(
     "/api/auth/google",
     createGoogleAuthRouter({

@@ -1,3 +1,4 @@
+import {csrfFetch as fetch} from './helpers/csrf-fetch.mjs';
 /** Integration tests on a migrated development MySQL database. Creates and removes its own tenants only.
  * Run: node --test scripts/access.integration.mjs (no external AI credentials needed).
  */

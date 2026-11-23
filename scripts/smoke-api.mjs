@@ -1,3 +1,4 @@
+import {csrfFetch as fetch} from './helpers/csrf-fetch.mjs';
 /** Smoke HTTP de endpoints reales. Ejecutar con backend y base de datos funcionando y con los datos demo instalados. */
 import assert from 'node:assert/strict';
 
