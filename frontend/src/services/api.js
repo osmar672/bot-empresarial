@@ -45,6 +45,22 @@ export async function chatStream(question,{onEvent,signal,conversationId,documen
   }
 }
 
+let csrfRequest;
+async function csrfToken(){
+ if(!csrfRequest)csrfRequest=(async()=>{
+  const response=await fetch('/api/csrf-token',{credentials:'same-origin',cache:'no-store'});
+  if(!response.ok)throw new ApiError('No se pudo verificar la seguridad de la solicitud.',response.status);
+  return (await response.json()).token;
+ })().finally(()=>{csrfRequest=undefined;});
+ return csrfRequest;
+}
 async function request(url,options){
- try{return await fetch(url,options);}catch(error){if(error.name==='AbortError')throw error;throw new ApiError('No se pudo conectar con el servidor.',0);}
+ try{
+  if(!['GET','HEAD','OPTIONS'].includes((options.method||'GET').toUpperCase())){
+   const token=await csrfToken();
+   if(options.signal?.aborted)throw new DOMException('Solicitud cancelada','AbortError');
+   options.headers={...options.headers,'X-CSRF-Token':token};
+  }
+  return await fetch(url,options);
+ }catch(error){if(error.name==='AbortError'||error instanceof ApiError)throw error;throw new ApiError('No se pudo conectar con el servidor.',0);}
 }

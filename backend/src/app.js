@@ -1,3 +1,4 @@
+import {apiSecurity} from './middlewares/requestSecurity.js';
 import administration from './routes/administration.routes.js';
 import corrections from './routes/corrections.routes.js';
 import hrInbox from './routes/hr-inbox.routes.js';
@@ -40,20 +41,15 @@ app.use(helmet({
   'script-src':["'self'",'https://accounts.google.com/gsi/'],
   'connect-src':["'self'",'https://accounts.google.com/gsi/'],
   'frame-src':['https://accounts.google.com/gsi/'],
+  'object-src':["'none'"],
+  'base-uri':["'none'"],
+  'frame-ancestors':["'none'"],
+  'form-action':["'self'"],
   'style-src':["'self'","'unsafe-inline'",'https://accounts.google.com/gsi/']
  }}:false
 }));
 app.use(express.json({limit:'40kb'}));
-// Evita escrituras desde orígenes externos con cookies; Vite usa proxy same-origin.
-app.use('/api',(req,res,next)=>{
-  res.set('Cache-Control','private, no-store');
-  if(['POST','PUT','PATCH','DELETE'].includes(req.method)&&req.headers.origin){
-    try{const origin=new URL(req.headers.origin),host=origin.host;
-      const allowed=host===req.get('host')||(env.nodeEnv!=='production'&&['127.0.0.1:5173','localhost:5173'].includes(host));
-      if(!allowed)return next(new HttpError(403,'Origen no autorizado'));
-    }catch{return next(new HttpError(403,'Origen inválido'));}
-  }next();
-});
+app.use('/api',apiSecurity());
 app.get('/api/health',(_req,res)=>res.json({ok:true,app:'Luma',database:'mysql',chat:'groq',features:{attendance:true,attendanceHistory:true,vacationRequests:true,schedules:true}}));
 app.use('/api/corrections',corrections);app.use('/api/hr-inbox',hrInbox);app.use('/api/auth/mfa',mfa);app.use('/api/knowledge',knowledge);app.use('/api/policies',policies);app.use('/api/onboarding',onboarding);
 app.use('/api/reports',reports);app.use('/api/search',search);

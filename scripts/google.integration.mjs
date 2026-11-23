@@ -1,3 +1,5 @@
+import {apiSecurity} from '../backend/src/middlewares/requestSecurity.js';
+import {csrfFetch as fetch} from './helpers/csrf-fetch.mjs';
 /** Real HTTP/MySQL and real signature verification against local test keys; no live Google sign-in. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -15,7 +17,7 @@ const clientId='fixture.apps.googleusercontent.com';
 const client=new OAuth2Client();
 const {privateKey,publicKey}=generateKeyPairSync('rsa',{modulusLength:2048});
 client.getFederatedSignonCertsAsync=async()=>({certs:{fixture:publicKey.export({type:'spki',format:'pem'})}});
-const instance=express();instance.use(express.json());
+const instance=express();instance.use(express.json());instance.use("/api",apiSecurity());
 instance.use('/api/auth/google',createGoogleAuthRouter({clientId,verify:(credential,nonce)=>verifyGoogleCredential(credential,nonce,{clientId,client})}));
 instance.use(app);instance.use(errors);
 const server=instance.listen(0,'127.0.0.1');await new Promise(resolve=>server.once('listening',resolve));

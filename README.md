@@ -210,3 +210,7 @@ Permisos por horas, saldo de vacaciones con movimientos, OCR, búsqueda general,
 ## Flujos de RH y protección del acceso
 
 Correcciones de marcaciones, bandeja de RH, respuestas de IA revisadas, aceptación de políticas por versión, tareas de ingreso, autenticación en dos pasos y conectores de respaldo externo: [guía de operación](docs/FLUJOS_RH_IA_Y_DOBLE_FACTOR.md).
+
+## Asignación de seguridad: SQLi, XSS, CSRF y CORS
+
+La implementación, comandos, investigación y presentación están en [docs/seguridad/IMPLEMENTACION.md](docs/seguridad/IMPLEMENTACION.md). El laboratorio vulnerable es local y aislado en una tabla temporal; nunca se expone como endpoint de la aplicación. En producción configura `PUBLIC_APP_URL` con tu origen HTTPS. Los clientes que modifican datos deben obtener `/api/csrf-token`, conservar su cookie y enviar `X-CSRF-Token`; el cliente web ya lo hace.

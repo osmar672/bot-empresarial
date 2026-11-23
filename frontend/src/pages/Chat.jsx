@@ -5,8 +5,7 @@ import useIdlePrompt from '../hooks/useIdlePrompt.js';
 import PenguinMascot from '../components/PenguinMascot.jsx';
 import {useConfirm} from '../components/ConfirmProvider.jsx';
 import useStoredToggle from '../hooks/useStoredToggle.js';
-import Markdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import Markdown from '../components/SafeMarkdown.js';
 import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {
   AudioLines,
@@ -91,7 +90,7 @@ export default function Chat({onDocuments,initialConversation}){
       {older&&<button className="older-messages" disabled={busy||loading} onClick={()=>loadHistory(conversationId,older)}>Cargar mensajes anteriores</button>}
       {loading?<Spinner/>:!messages.length?<div className="chat-welcome"><div className="welcome-intro">{!idlePrompt&&!voice.listening&&!voice.speaking&&<PenguinMascot hero state={error?'error':question.trim()?'listening':'idle'}/>}<div className="welcome-intro-copy"><div className="welcome-caption">TU ASISTENTE DE TRABAJO</div><h2>Hola, {session.user.name.split(' ')[0]}.</h2><p>¿En qué te ayudo hoy?</p></div></div><p className="welcome-description">Consulta las políticas y los documentos de {session.company.name}.</p><div className="prompt-examples">{examples.map((text,i)=><button disabled={busy} onClick={()=>send(text)} key={text}><span className="prompt-number">0{i+1}</span><span>{text}</span><ArrowUpRight size={16}/></button>)}</div><button className="link-inline" onClick={onDocuments}><FileText size={14}/> Explorar la biblioteca</button></div>:
        <div className="messages">{messages.map(m=><article key={m.id} className={'message '+(m.role==='user'?'message-user':'message-bot')} aria-label={m.role==='user'?'Tu mensaje':'Respuesta de Luma'}><div className="message-main">
-        <div className="message-content">{m.text?(m.role==='assistant'?<Markdown remarkPlugins={[remarkGfm]} components={{a:({href,children})=><a href={href} target="_blank" rel="noopener noreferrer">{children}</a>}}>{m.text}</Markdown>:m.text):<span className="typing" aria-label="Preparando respuesta"><i/><i/><i/></span>}</div>
+        <div className="message-content">{m.text?(m.role==='assistant'?<Markdown>{m.text}</Markdown>:m.text):<span className="typing" aria-label="Preparando respuesta"><i/><i/><i/></span>}</div>
         {m.role==='assistant'&&m.text&&<footer className="answer-tools"><AnswerFeedback messageId={m.messageId} initialRating={m.feedbackRating}/><button className="read-answer" aria-label={voice.speaking&&voice.readingId===m.id?'Detener lectura':'Escuchar respuesta'} title={voice.speaking&&voice.readingId===m.id?'Detener lectura':'Escuchar respuesta'} onClick={()=>{if(voice.speaking&&voice.readingId===m.id)voice.stopAll();else voice.speak(m.text,m.id);}}>{voice.speaking&&voice.readingId===m.id?<Square size={14}/>:<Volume2 size={15}/>}</button>
          <button className="copy-answer" aria-label={copied===m.id?'Respuesta copiada':'Copiar respuesta'} title={copied===m.id?'Copiado':'Copiar respuesta'} onClick={()=>copy(m)}>{copied===m.id?<Check size={15}/>:<Copy size={15}/>}<span>{copied===m.id?'Copiado':'Copiar'}</span></button>
         </footer>}

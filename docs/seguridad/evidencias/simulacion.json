@@ -1,0 +1,16 @@
+{
+  "executedAt": "2026-11-23T17:44:30.935Z",
+  "scope": "MySQL local; tabla TEMPORARY con un usuario ficticio; sin endpoints vulnerables",
+  "payload": "' OR 1=1 -- ",
+  "before": {
+    "sql": "SELECT id,email FROM security_lab_users WHERE email='' OR 1=1 -- ' AND password_marker='incorrect-password-marker'",
+    "rows": 1,
+    "result": "BYPASS: accede con contraseña incorrecta"
+  },
+  "after": {
+    "sql": "SELECT id,email FROM security_lab_users WHERE email=? AND password_marker=?",
+    "rows": 0,
+    "result": "BLOQUEADO: el payload se compara como dato literal"
+  },
+  "positiveControl": 1
+}

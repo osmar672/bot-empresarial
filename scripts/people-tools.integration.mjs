@@ -1,3 +1,4 @@
+import {csrfFetch as fetch} from './helpers/csrf-fetch.mjs';
 import { mailConfiguration } from "../backend/src/services/mailTransport.js";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
