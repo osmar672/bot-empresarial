@@ -33,3 +33,9 @@ No son capturas de un sitio atacado ni pruebas de vulnerabilidad del login origi
 ## Limitaciones
 
 No se verificaron credenciales reales de Groq, Drive, Gmail ni un despliegue público HTTPS. CSP y cookies Secure se verificaron con configuración de producción en pruebas locales; eso no acredita certificados o proxy de un despliegue. La base local de desarrollo utiliza las credenciales del Compose y no es una configuración de producción. No se hizo pentesting de toda la aplicación ni se contactó al profesor.
+
+## Repetición solicitada por el usuario
+
+El 23 de noviembre de 2026 se repitieron `test:security` (7/7), `test:security:integration` (1/1), `test:integration` (6/6), `test:workflows`, `smoke`, `build` y `npm test` (73/83, con los mismos 10 fallos Rockstar). La API respondió correctamente al chequeo de salud.
+
+En el arranque del entorno restaurado, una ejecución aislada de CSP agotó sus 15 segundos al cargar la aplicación. Se amplió exclusivamente el límite del proceso hijo a 120 segundos y se agregó `assert.ifError(result.error)` para mostrar errores de arranque explícitamente. No se eliminaron ni relajaron aserciones de seguridad. La repetición completa de seguridad terminó con 7/7 aprobadas; la comprobación CSP tardó aproximadamente 2,1 segundos con el entorno ya inicializado.

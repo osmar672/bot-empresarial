@@ -58,6 +58,7 @@ test('real production application sends CSP without inline scripts and denies fo
    const script=csp.split(';').find(d=>d.startsWith('script-src '));assert.ok(script&&!script.includes('unsafe-inline')&&!script.includes('unsafe-eval'));
    assert.equal((await fetch(base+'/api/health',{headers:{origin:'https://evil.example'}})).status,403);
   }finally{await new Promise(r=>server.close(r));await pool.end();}
- `],{cwd:new URL('../..',import.meta.url),env:{...process.env,NODE_ENV:'production',PUBLIC_APP_URL:'https://app.example',CORS_ORIGINS:''},encoding:'utf8',timeout:15000});
+ `],{cwd:new URL('../..',import.meta.url),env:{...process.env,NODE_ENV:'production',PUBLIC_APP_URL:'https://app.example',CORS_ORIGINS:''},encoding:'utf8',timeout:120000});
+ assert.ifError(result.error);
  assert.equal(result.status,0,result.stderr);
 });
